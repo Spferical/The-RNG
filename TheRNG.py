@@ -32,7 +32,6 @@ PLAYER_SPEED = .025
 FRICTION = 0.00667
 ENEMY_MIN_SPEED = 0.01
 ENEMY_MAX_SPEED = 0.2
-#ENEMYFONT = None
 LEVEL_LENGTH = 6 * 1000 # in milliseconds
 
 #get fonts from /data/fonts*
@@ -558,9 +557,6 @@ def main_menu():
     while 1:
         choice = menu("THE RNG", ["Play", "Options", "Exit"],
         pygame.font.Font(MENU_FONT, 100), pygame.font.Font(MENU_FONT, 50), RED, WHITE, RED, space_between_options = 50, enemies_background = True)
-        #if choice == 0:  main_menu()#to be implemented... again
-            #while 1:
-            #    story_mode()
 
         if choice == 0:
             while 1:
@@ -656,19 +652,6 @@ def options_menu():
             break
 
 
-def story_mode():
-    global player, enemies, screen, score, clock, background, highscores
-
-    #show story intro and stuff
-    level = 1
-    while 1:
-        play = ''
-        while play != "level passed":
-            play = play_level(level, 10000, 500 / level)
-        level_completed_screen()
-        level += 1
-
-
 def level_completed_screen():
     #basic level completed screen
     #dim screen
@@ -681,96 +664,6 @@ def level_completed_screen():
     pygame.display.flip()
     wait_for_keypress(certainkey=K_RETURN)
     screen_dimmer.undim()
-
-
-def play_level(level, level_length, enemy_spawn_frequency, new_level_enemy = True, show_score = False):
-
-    global player, enemies, screen, score, clock, background, highscores
-
-
-    #init player and enemies
-    players = [Player('wasd'), Player('arrows')]
-    enemies = []
-
-    # Blit everything to the screen
-    screen.blit(background, (0, 0))
-    pygame.display.update()
-    score = 0
-    spawntime = 0
-    clock.tick() # reset clock to 0
-    time_until_new_level = level_length
-
-    if new_level_enemy:
-        #spawn 'new level' enemy
-        x = WINDOW_WIDTH - 10
-        y = 50
-        speed = ENEMY_MAX_SPEED
-        textsprite = "LEVEL " + str(level)
-        enemyfont = pygame.font.Font(ENEMYFONT, 50)
-        enemies.append(Enemy(x, y, speed, text = textsprite, font = enemyfont, color = RED))
-        enemies[0].update(1)
-    # main loop
-
-    while 1:
-        # Make sure game doesn't run at more than MAX_FPS frames per second
-        time_since_last_frame = clock.tick(MAX_FPS)
-
-        event = handle_keys()
-        if event == "exit": #exit to main menu
-            main_menu()
-
-        #check if player has hit an enemy using smaller hitbox
-        for player in players:
-            if playertouchingenemy(player.rect.inflate(-14, -14), enemies):
-                players.remove(player)
-                #if there are no players left,
-                if len(players) == 0:
-                    #show game over screen
-                    game_over(save_highscores = False, show_highscores = False)
-                    # break the loop
-                    break
-        #new level if time
-        time_until_new_level -= time_since_last_frame
-        if time_until_new_level <= 0:
-            return "level passed"
-        #spawn enemies
-        spawntime += time_since_last_frame
-        #spawn enemies on right if (spawn frequency) time has passed
-        if spawntime >= enemy_spawn_frequency:
-            spawntime -= enemy_spawn_frequency
-            spawn_number_enemies(level)
-
-                                           #####RENDER EVERYTHING#####
-        #draw background color
-        #windowsurface.fill(windowcolor)
-        screen.blit(background, player.rect, player.rect)
-        #screen.blit(background, (0, 0))
-        for enemy in enemies:
-            screen.blit(background, enemy.rect, enemy.rect)
-        for player in players:
-            player.update(time_since_last_frame)
-
-        font = pygame.font.Font(None, 20)
-
-        if show_score:
-            #draw score at top-middle of screen
-            draw_text('Score:' + str(score), font, screen, WINDOW_WIDTH / 2, 20, color = RED, background = BLACK, position = 'center')
-
-        #draw FPS at topright screen
-        fps = 1.0 / time_since_last_frame * 1000
-        draw_text(str(int(fps)) + '/' + str(MAX_FPS), font, screen, WINDOW_WIDTH - 10, 10, color = WHITE, background = BLACK, position = 'topright')
-
-        #draw enemies in enemies
-        for enemy in enemies[:]:
-            enemy.update(time_since_last_frame)
-            screen.blit(enemy.image, enemy.rect)
-
-        #draw players
-        for player in players:
-            screen.blit(player.image, player.rect)
-
-        #blit to screen
-        pygame.display.update()
 
 
 def arcade():
