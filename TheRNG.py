@@ -1,19 +1,14 @@
 #!/usr/bin/python2
 
-try:
-    import sys
-    import random
-    import math
-    import os
-    import getopt
-    import pygame
-    import shelve
-    import time
-    #from socket import *
-    from pygame.locals import *
-except ImportError, err:
-    print "couldn't load module. %s" % (err)
-    sys.exit(2)
+import sys
+import random
+import math
+import os
+import getopt
+import pygame
+import shelve
+import time
+from pygame.locals import *
 
 if not pygame.font: print 'Warning, fonts disabled'
 if not pygame.mixer: print 'Warning, sound disabled'
