@@ -10,60 +10,53 @@ import shelve
 import time
 from pygame.locals import *
 
-if not pygame.font: print 'Warning, fonts disabled'
-if not pygame.mixer: print 'Warning, sound disabled'
+if not pygame.font:
+    print 'Warning, fonts disabled'
+if not pygame.mixer:
+    print 'Warning, sound disabled'
 
-#setting up constants
-WINDOW_WIDTH=640
-WINDOW_HEIGHT=480
-BLACK = (0,0,0)
-WHITE=(255,255,255)
-RED=(255,0,0)
-GREEN=(0,255,0)
-BLUE=(0,0,255)
-DARK_GREEN = (0,65,0)
+# setting up constants
+WINDOW_WIDTH = 640
+WINDOW_HEIGHT = 480
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+DARK_GREEN = (0, 65, 0)
 GREY = (100, 100, 100)
 BACKGROUND_COLOR = DARK_GREEN
+COLLISION_RECT_COLOR = [n * 0.8 for n in BACKGROUND_COLOR]
 MAX_FPS = 60
-ENEMY_SPAWNDELAY = 500 # divided by current level
+ENEMY_SPAWNDELAY = 500  # divided by current level
 windowcolor = BLACK
 PLAYER_SPEED = .025
 FRICTION = 0.00667
 ENEMY_MIN_SPEED = 0.01
 ENEMY_MAX_SPEED = 0.2
-LEVEL_LENGTH = 6 * 1000 # in milliseconds
+LEVEL_LENGTH = 6 * 1000  # in milliseconds
 
-#get fonts from /data/fonts*
+# get fonts from /data/fonts*
 FONTFILES = [f for f in os.listdir(os.path.join("data", "fonts"))
              if f.endswith('.ttf')]
 FONTS = []  # None = default font
 for file in FONTFILES:
     FONTS.append(os.path.join("data", "fonts", file))
-#get fonts natively available on system
-#SYSFONTS = pygame.font.get_fonts()
-MENU_FONT = os.path.join("data", "fonts", "kenpixel.ttf") # used for main menu
-GAME_OVER_FONT = None # None = pygame default, used for game over screen
-GUI_FONT = None # None = pygame default, used for fps/frametime/enemy number indicators in game
+MENU_FONT = os.path.join("data", "fonts", "kenpixel.ttf")  # used for main menu
+GAME_OVER_FONT = None  # None = pygame default, used for game over screen
+# None = pygame default, used for fps/frametime/enemy number indicators in game
+GUI_FONT = None
 
 
 class Player():
+
     """The player, can move left/right and up/down
     Functions: reinit, update
     Attributes: which, speed"""
 
-    def __init__(self, controls = 'all'):
+    def __init__(self, controls='all'):
         self.image, self.rect = load_image('player.png')
-        #old code; used to be used for frames
-        #can still be used if an animation is added
-        #self.frames = get_frames_from_image(self.image, 4, (16, 16))
-        #self.rect = self.frames[0].get_rect()
-        #self.frameindex = 0
-        #self.image = self.frames[0]
-        #self.framedelay = 10
-        #self.framewait = 0
         self.pos = WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2
-        #self.rect.x = WINDOW_WIDTH / 2
-        #self.rect.y = WINDOW_HEIGHT / 2
 
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
@@ -80,73 +73,69 @@ class Player():
 
     def reinit(self):
         self.state = "still"
-        self.movepos = [0,0]
+        self.movepos = [0, 0]
 
     def update(self, time_passed):
-        #update frame
-        #self.framewait += 1
-        #if self.framewait >= self.framedelay:
-        #    self.framewait = 0
-        #    self.frameindex += 1
-        #    if self.frameindex > len(self.frames) - 1:
-        #        self.frameindex = 0
-        #    self.image = self.frames[self.frameindex]
 
-        #friction
+        # friction
         for i in range(time_passed):
-            self.movepos[0] = self.movepos[0] * (1.0-FRICTION)
-            self.movepos[1] = self.movepos[1] * (1.0-FRICTION)
+            self.movepos[0] = self.movepos[0] * (1.0 - FRICTION)
+            self.movepos[1] = self.movepos[1] * (1.0 - FRICTION)
         if abs(self.movepos[0]) < 0.1:
             self.movepos[0] = 0
         if abs(self.movepos[1]) < 0.1:
             self.movepos[1] = 0
-        #apply player movement to velocity
-        self.movepos[0] += (self.moveright - self.moveleft) * self.speed * time_passed
-        self.movepos[1] += (self.movedown - self.moveup) * self.speed * time_passed
+        # apply player movement to velocity
+        self.movepos[
+            0] += (self.moveright - self.moveleft) * self.speed * time_passed
+        self.movepos[1] += (self.movedown - self.moveup) * \
+            self.speed * time_passed
 
+        # update x and y seperately to allow smooth movement along screen
+        # edge
 
-        ###UPDATE X AND Y SEPERATELY TO ALLOW SMOOTH MOVEMENT ALONG SCREEN EDGE###
-
-        #first, move x
+        # first, move x
         newpos = self.pos[0] + self.movepos[0], self.pos[1]
         newrect = Rect(newpos[0], newpos[1], self.rect.w, self.rect.h)
 
-        #if new position is in screen, move
+        # if new position is in screen, move
         if self.area.contains(newrect):
             self.rect = newrect
             self.pos = newpos
 
-        #then, move y
+        # then, move y
         newpos = self.pos[0], self.pos[1] + self.movepos[1]
         newrect = Rect(newpos[0], newpos[1], self.rect.w, self.rect.h)
 
-        #if new position is in screen, move
+        # if new position is in screen, move
         if self.area.contains(newrect):
             self.rect = newrect
             self.pos = newpos
-        #pygame.event.pump()
 
 
 class Enemy(pygame.sprite.Sprite):
+
     """an enemy: comes from the right
     heads to the left
     appearance as text or sprite if text is not specified
     functions: reinit, update"""
 
-    def __init__(self, x, y, speed, game, text = None, font = None, color = WHITE, erratic = False, aimed = False,
-            rotated = False):
+    def __init__(self, x, y, speed, game, text=None, font=None, color=WHITE,
+                 erratic=False, aimed=False, rotated=False):
         pygame.sprite.Sprite.__init__(self)
         if text:
-            if font == None:
-                font = pygame.font.Font(get_random_font(), random.randint(20, 50))
+            if font is None:
+                font = pygame.font.Font(
+                    get_random_font(), random.randint(20, 50))
             self.image = font.render(text, True, color)
             self.rect = self.image.get_rect()
         else:
             self.image, self.rect = load_image('Enemy.gif')
         if rotated:
-            #rotate the image of the enemy in a random increment of 90
-            self.image = pygame.transform.rotate(self.image, random.choice([90, 180, 270]))
-            #and get a new rect for it, too
+            # rotate the image of the enemy in a random increment of 90
+            self.image = pygame.transform.rotate(
+                self.image, random.choice([90, 180, 270]))
+            # and get a new rect for it, too
             self.rect = self.image.get_rect()
         self.pos = x, y
         screen = pygame.display.get_surface()
@@ -160,65 +149,74 @@ class Enemy(pygame.sprite.Sprite):
     def reinit(self):
         self.state = "still"
         if not self.aimed:
-            self.movepos = [-self.speed,0]#enemies are by default moving left
+            # enemies are by default moving left
+            self.movepos = [-self.speed, 0]
         else:
-            #pick random player to move towards
-            player = self.game.players[random.randint(0, len(self.game.players) - 1)]
-                ##WARNING: TRIGONOMETRY##
-            #calculate vector to player
-            self.movepos = [player.pos[0] - self.pos[0], player.pos[1] - self.pos[1]]
-            #calculate current mag
+            # pick random player to move towards
+            player = self.game.players[
+                random.randint(0, len(self.game.players) - 1)]
+            # calculate vector to player
+            self.movepos = [
+                player.pos[0] - self.pos[0], player.pos[1] - self.pos[1]]
+            # calculate current mag
             mag = math.sqrt(self.movepos[0] ** 2 + self.movepos[1] ** 2)
-            #divide x/y movement by mag, changing angled movement to 1
-            self.movepos[0], self.movepos[1] = self.movepos[0] / mag, self.movepos[1] / mag
-            #multiiply it by self.speed
-            self.movepos[0], self.movepos[1] = self.speed * self.movepos[0], self.speed * self.movepos[1]
+            # divide x/y movement by mag, changing angled movement to 1
+            self.movepos[0], self.movepos[1] = self.movepos[
+                0] / mag, self.movepos[1] / mag
+            # multiiply it by self.speed
+            self.movepos[0], self.movepos[1] = self.speed * \
+                self.movepos[0], self.speed * self.movepos[1]
+
     def update(self, time_passed):
 
-        if self.erratic: # moves erratically up and down
-            self.movepos[1] += random.uniform(-ENEMY_MIN_SPEED, ENEMY_MIN_SPEED)
+        if self.erratic:  # moves erratically up and down
+            self.movepos[
+                1] += random.uniform(-ENEMY_MIN_SPEED, ENEMY_MIN_SPEED)
 
-        newpos = self.pos[0] + self.movepos[0] * time_passed, self.pos[1] + self.movepos[1] * time_passed
+        newpos = self.pos[0] + self.movepos[0] * \
+            time_passed, self.pos[1] + self.movepos[1] * time_passed
         if newpos[0] + self.rect.w > -5:
-            #self.rect = newpos
             self.pos = newpos
             self.rect.x, self.rect.y = newpos
         else:
             self.game.enemies.remove(self)
 
 
-
 class Dimmer:
+
     """class for dimming the screen
     functions: dim, undim"""
-    def __init__(self, keepalive=0):
-        self.keepalive=keepalive
-        if self.keepalive:
-            self.buffer=pygame.Surface(pygame.display.get_surface().get_size())
-        else:
-            self.buffer=None
 
-    def dim(self, darken_factor=64, color_filter=(0,0,0)):
+    def __init__(self, keepalive=0):
+        self.keepalive = keepalive
+        if self.keepalive:
+            self.buffer = pygame.Surface(
+                pygame.display.get_surface().get_size())
+        else:
+            self.buffer = None
+
+    def dim(self, darken_factor=64, color_filter=(0, 0, 0)):
         if not self.keepalive:
-            self.buffer=pygame.Surface(pygame.display.get_surface().get_size())
-        self.buffer.blit(pygame.display.get_surface(),(0,0))
-        if darken_factor>0:
-            darken=pygame.Surface(pygame.display.get_surface().get_size())
+            self.buffer = pygame.Surface(
+                pygame.display.get_surface().get_size())
+        self.buffer.blit(pygame.display.get_surface(), (0, 0))
+        if darken_factor > 0:
+            darken = pygame.Surface(pygame.display.get_surface().get_size())
             darken.fill(color_filter)
             darken.set_alpha(darken_factor)
             # safe old clipping rectangle...
-            old_clip=pygame.display.get_surface().get_clip()
+            old_clip = pygame.display.get_surface().get_clip()
             # ..blit over entire screen...
-            pygame.display.get_surface().blit(darken,(0,0))
-            #pygame.display.flip()
+            pygame.display.get_surface().blit(darken, (0, 0))
+            # pygame.display.flip()
             # ... and restore clipping
             pygame.display.get_surface().set_clip(old_clip)
 
     def undim(self):
         if self.buffer:
-            pygame.display.get_surface().blit(self.buffer,(0,0))
+            pygame.display.get_surface().blit(self.buffer, (0, 0))
             if not self.keepalive:
-                self.buffer=None
+                self.buffer = None
 
 
 def load_image(name, colorkey=None):
@@ -231,17 +229,18 @@ def load_image(name, colorkey=None):
     image = image.convert_alpha()
     if colorkey is not None:
         if colorkey is -1:
-            colorkey = image.get_at((0,0))
+            colorkey = image.get_at((0, 0))
         image.set_colorkey(colorkey, RLEACCEL)
     return image, image.get_rect()
 
 
 def get_random_font():
-    #returns a random font from the list FONTS
+    # returns a random font from the list FONTS
     return FONTS[random.randint(0, len(FONTS) - 1)]
 
+
 def get_frames_from_image(base_image, framenumber, framesize):
-    #gets frames of an animation from an image
+    # gets frames of an animation from an image
 
     frames = []
     offsets = []
@@ -249,17 +248,20 @@ def get_frames_from_image(base_image, framenumber, framesize):
         offsets.append(framesize[0] * n)
 
     for i in range(framenumber):
-        #for each frame, turn it into a seperate image
+        # for each frame, turn it into a seperate image
         image = pygame.Surface(framesize)
-        #image.blit(base_image, (0,0))#, (offsets[i], framesize))
-        image = base_image.subsurface(offsets[i], 0, framesize[0], framesize[1])
+        # image.blit(base_image, (0,0))#, (offsets[i], framesize))
+        image = base_image.subsurface(
+            offsets[i], 0, framesize[0], framesize[1])
         frames.append(image)
     return frames
 
 
 def load_sound(name):
     class NoneSound:
-        def play(self): pass
+
+        def play(self):
+            pass
     if not pygame.mixer:
         return NoneSound()
     fullname = os.path.join('data', name)
@@ -297,9 +299,9 @@ def playertouchingenemy(playerrect, enemies):
     return False
 
 
-
-def draw_text(text, font, surface, x, y, color = WHITE, background = None, position = "topleft"):
-    #draws some text using font to the surface
+def draw_text(text, font, surface, x, y, color=WHITE, background=None,
+              position="topleft"):
+    # draws some text using font to the surface
     textobj = font.render(text, 1, color)
     textrect = textobj.get_rect()
     if position == 'center':
@@ -311,26 +313,25 @@ def draw_text(text, font, surface, x, y, color = WHITE, background = None, posit
     elif position == 'topright':
         textrect.topright = (x, y)
     if background:
-        pygame.draw.rect(screen, background, textrect.inflate(2,2))
+        pygame.draw.rect(screen, background, textrect.inflate(2, 2))
     surface.blit(textobj, textrect)
-    return textrect.inflate(2,2) #for knowing where to redraw the background
-
-
+    return textrect.inflate(2, 2)  # for knowing where to redraw the background
 
 
 class Game(object):
-    base_enemy_spawn_delay = 500 # divided by current level
-    base_level_length = 6000 # in milliseconds
+    base_enemy_spawn_delay = 500  # divided by current level
+    base_level_length = 6000  # in milliseconds
     enemy_min_speed = 0.01
     enemy_max_speed = 0.2
     background_color = DARK_GREEN
     show_hitboxes = False
     show_debug_info = False
-    hotseat_multiplayer=False
+    hotseat_multiplayer = False
     # if controls == '', player is not playing
-    types_of_controls = ['wasd', 'arrows', 'tfgh', 'ijkl', 'numpad', '' ]
+    types_of_controls = ['wasd', 'arrows', 'tfgh', 'ijkl', 'numpad', '']
     # default controls for each player
     players_controls = ['wasd', 'arrows', 'tfgh', 'ijkl']
+
     def __init__(self, screen):
         self.screen = screen
         self.clock = pygame.time.Clock()
@@ -344,11 +345,11 @@ class Game(object):
         textpos.centerx = self.background.get_rect().centerx
         self.background.blit(text, textpos)
 
-        #load highscores from data/highscores
+        # load highscores from data/highscores
         try:
             self.highscores = load_highscores()
         except:
-            #get new highscores if it cannot load highscores
+            # get new highscores if it cannot load highscores
             self.highscores = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
         self.init_game()
@@ -357,10 +358,14 @@ class Game(object):
         self.players = []
         self.enemies = []
         self.level = 1
-        #old textrects: used for filling background color
+        # old textrects: used for filling background color
         self.old_textrects = []
 
     def menu(self, title, options, main_menu=False, option_selected=0):
+        """
+        A basic menu.
+        Arrow keys are used to navigate.
+        """
         titlecolor = RED
         optioncolor = WHITE
         selectedoptioncolor = RED
@@ -375,8 +380,6 @@ class Game(object):
             enemies_background = False
         space_between_options = optionfont.get_height()
 
-        #basic menu; title in titlecolor and titlefont, options in optioncolor and optionfont.
-        #arrow keys are used to navigate and selected option is displayed in selectedoptioncolor
         self.enemies = []
         spawntimer = pygame.time.Clock()
         spawntime = 0
@@ -384,36 +387,42 @@ class Game(object):
 
         while 1:
             time_since_last_frame = self.clock.tick(MAX_FPS)
-            #clear screen with backgroundcolor
+            # clear screen with backgroundcolor
             screen_dimmer.undim()
-            self.screen.blit(self.background, (0,0))
+            self.screen.blit(self.background, (0, 0))
 
             if enemies_background:
-                #draw background fanciness
-                #scrolling enemies
+                # draw background fanciness
+                # scrolling enemies
                 spawntime += spawntimer.tick()
                 if spawntime >= ENEMY_SPAWNDELAY:
                     spawntime -= ENEMY_SPAWNDELAY
                     x = WINDOW_WIDTH - 10
                     y = random.randint(0, WINDOW_HEIGHT)
-                    speed = random.uniform(ENEMY_MIN_SPEED,ENEMY_MAX_SPEED)
-                    textsprite = random.choice([str(random.randint(1,1024)) ])
-                    self.enemies.append(Enemy(x, y, speed, self, text = textsprite))
+                    speed = random.uniform(ENEMY_MIN_SPEED, ENEMY_MAX_SPEED)
+                    textsprite = random.choice([str(random.randint(1, 1024))])
+                    self.enemies.append(
+                        Enemy(x, y, speed, self, text=textsprite))
                 for object in self.enemies[:]:
                     object.update(time_since_last_frame)
                     self.screen.blit(object.image, object.rect)
-            #then, darken the screen without the title/options
+            # then, darken the screen without the title/options
             screen_dimmer.dim(darken_factor=200)
-            #draw title and options
-            draw_text(title, titlefont, self.screen, (WINDOW_WIDTH / 2), 50, color = titlecolor, position = 'center')
+            # draw title and options
+            draw_text(title, titlefont, self.screen, (WINDOW_WIDTH / 2),
+                      50, color=titlecolor, position='center')
             for i in range(len(options)):
+                x = WINDOW_WIDTH / 2
+                y = space_below_title + 30 + (i + 1) * space_between_options
                 if option_selected == i:
-                    draw_text(options[i], optionfont, self.screen, (WINDOW_WIDTH / 2), space_below_title + 30 + (i + 1) * space_between_options, color = selectedoptioncolor, position = 'center')
+                    color = selectedoptioncolor
                 else:
-                    draw_text(options[i], optionfont, self.screen, (WINDOW_WIDTH / 2), space_below_title + 30 + (i + 1) * space_between_options, color = optioncolor, position = 'center')
-            #update display
+                    color = optioncolor
+                draw_text(options[i], optionfont, self.screen, x, y,
+                          color=color, position='center')
+            # update display
             pygame.display.update()
-            #handle keys for menu
+            # handle keys for menu
             for event in pygame.event.get():
                 if event.type == QUIT:
                     self.exit()
@@ -427,7 +436,7 @@ class Game(object):
                         option_selected += 1
                         if option_selected > len(options) - 1:
                             option_selected = 0
-                    elif event.key == K_ESCAPE: # pressing escape quits
+                    elif event.key == K_ESCAPE:  # pressing escape quits
 
                         return "exit"
                     elif event.key == K_RETURN:
@@ -445,10 +454,11 @@ class Game(object):
             elif choice == 1:
                 self.options_menu()
 
-            elif choice == 2: # 'exit'
+            elif choice == 2:  # 'exit'
                 self.exit()
 
-            elif choice == 'exit': # if player presses ESC or tries to exit window
+            # if player presses ESC or tries to exit window
+            elif choice == 'exit':
                 self.exit()
 
     def exit(self):
@@ -460,108 +470,103 @@ class Game(object):
         while 1:
 
             if self.hotseat_multiplayer:
-                #if hotseat, show controls for all players
+                # if hotseat, show controls for all players
                 options = [
-                        "Show hitboxes " + str(self.show_hitboxes),
-                        "Hotseat multiplayer " + str(self.hotseat_multiplayer),
-                        "Player 1 controls = " + self.players_controls[0],
-                        "Player 2 controls = " + self.players_controls[1],
-                        "Player 3 controls = " + self.players_controls[2],
-                        "Player 4 controls = " + self.players_controls[3],
-                        "Back"
-                        ]
-                #indicate if any player is not playing
+                    "Show hitboxes " + str(self.show_hitboxes),
+                    "Hotseat multiplayer " + str(self.hotseat_multiplayer),
+                    "Player 1 controls = " + self.players_controls[0],
+                    "Player 2 controls = " + self.players_controls[1],
+                    "Player 3 controls = " + self.players_controls[2],
+                    "Player 4 controls = " + self.players_controls[3],
+                    "Back"
+                ]
+                # indicate if any player is not playing
                 for i in range(len(options[2:6])):
                     if self.players_controls[i] == '':
-                        options[i+2] = options[i+2][:9] + "Not Playing"
+                        options[i + 2] = options[i + 2][:9] + "Not Playing"
 
             else:
                 options = [
-                        "Show hitboxes " + str(self.show_hitboxes),
-                        "Hotseat multiplayer " + str(self.hotseat_multiplayer),
-                        "Back"
-                        ]
+                    "Show hitboxes " + str(self.show_hitboxes),
+                    "Hotseat multiplayer " + str(self.hotseat_multiplayer),
+                    "Back"
+                ]
             choice = self.menu("Options", options,
-                               option_selected = option_selected)
+                               option_selected=option_selected)
 
             if choice == 0:
-                #toggle showing hitboxes
+                # toggle showing hitboxes
                 self.show_hitboxes = not self.show_hitboxes
-                option_selected = 0
 
             if choice == 1:
-                #toggle hotseat multiplayer
+                # toggle hotseat multiplayer
                 self.hotseat_multiplayer = not self.hotseat_multiplayer
-                option_selected = 1
 
-            elif choice == 2:
-                option_selected = 2
-                if self.hotseat_multiplayer:
-                    self.players_controls[0] = self.types_of_controls[self.types_of_controls.index(self.players_controls[0]) - 1]
-                else:
-                    #exit to main menu
-                    break
-            elif choice == 3:
-                option_selected = 3
-                self.players_controls[1] = self.types_of_controls[self.types_of_controls.index(self.players_controls[1]) - 1]
+            elif not self.hotseat_multiplayer and choice == 2:
+                # exit to main menu
+                break
+            elif 2 <= choice <= 5:
+                player_index = choice - 2
+                control_type = self.players_controls[player_index]
+                self.players_controls[player_index] = \
+                    self.get_next_control_type(control_type)
 
-            elif choice == 4:
-                option_selected = 4
-                self.players_controls[2] = self.types_of_controls[self.types_of_controls.index(self.players_controls[2]) - 1]
-
-            elif choice == 5:
-                option_selected = 5
-                self.players_controls[3] = self.types_of_controls[self.types_of_controls.index(self.players_controls[3]) - 1]
-
-            elif choice == 6:
+            elif choice == 6 or choice == 'exit':
                 break
 
-            elif choice == 'exit':
-                #same, exit to main menu
-                break
+            option_selected = choice
+
+    def get_next_control_type(control_type):
+        i = self.types_of_controls.index(control_type) - 1
+        return self.types_of_controls[i]
 
     def spawn_number_enemies(self):
         x = WINDOW_WIDTH - 10
         y = random.randint(0, WINDOW_HEIGHT)
-        speed = random.uniform(ENEMY_MIN_SPEED,ENEMY_MAX_SPEED)
-        textsprite = random.choice([str(random.randint(1,1024)) ])
+        speed = random.uniform(ENEMY_MIN_SPEED, ENEMY_MAX_SPEED)
+        textsprite = random.choice([str(random.randint(1, 1024))])
         if self.level >= 4:
-            #1/10 chance of erratic movement from level 4 onward
-            erratic_movement = (1 == random.randint(1,10))
+            # 1/10 chance of erratic movement from level 4 onward
+            erratic_movement = (1 == random.randint(1, 10))
         else:
             erratic_movement = False
         if self.level >= 2:
-            #1/10 chance of aimed movement from level 2 onward
-            aimed = (1 == random.randint(1,10))
+            # 1/10 chance of aimed movement from level 2 onward
+            aimed = (1 == random.randint(1, 10))
         else:
             aimed = False
         if self.level >= 2:
-            #1/4 chance of starting rotated from level 2 onward
-            start_rotated = (1 == random.randint(1,4))
+            # 1/4 chance of starting rotated from level 2 onward
+            start_rotated = (1 == random.randint(1, 4))
         else:
             start_rotated = False
-        #get random font
-        size = random.randint(20,30)
+        # get random font
+        size = random.randint(20, 30)
         font = pygame.font.Font(get_random_font(), size)
 
-        self.enemies.append(Enemy(x, y, speed, self,
-            text = textsprite, font = font, erratic = erratic_movement, aimed = aimed, rotated = start_rotated))
+        self.enemies.append(Enemy(
+            x, y, speed, self,
+            text=textsprite, font=font, erratic=erratic_movement, aimed=aimed,
+            rotated=start_rotated))
 
-        #spawn enemies on left to encourage player to run
-        #and to look cool
+        # spawn enemies on left to encourage player to run
+        # and to look cool
         x = 10
         y = random.randint(0, WINDOW_HEIGHT)
-        #fast as the average speed of an enemy
+        # fast as the average speed of an enemy
         speed = (ENEMY_MAX_SPEED + ENEMY_MIN_SPEED) / 2
-        #1/2 chance of number, 1/2 chance of sprite
-        textsprite = random.choice([str(random.randint(1,99999999)) ]) #, None])
+        # 1/2 chance of number, 1/2 chance of sprite
+        # , None])
+        textsprite = random.choice([str(random.randint(1, 99999999))])
         if self.level >= 3:
-            #after level 3, half of the left enemies move erratically
-            #this makes them look cooler and more terrifying
-            erratic_movement = (1 == random.randint(1,2))
+            # after level 3, half of the left enemies move erratically
+            # this makes them look cooler and more terrifying
+            erratic_movement = (1 == random.randint(1, 2))
         else:
             erratic_movement = False
-        self.enemies.append(Enemy(x, y, speed, self, text = textsprite, font = font, erratic = erratic_movement))
+        self.enemies.append(Enemy(
+            x, y, speed, self, text=textsprite, font=font,
+            erratic=erratic_movement))
 
     def handle_keys(self):
         for event in pygame.event.get():
@@ -618,10 +623,10 @@ class Game(object):
                         if event.key == K_KP2:
                             player.movedown = 1
                 if event.key == K_F3:
-                    #toggle showing debug info
+                    # toggle showing debug info
                     self.show_debug_info = not(self.show_debug_info)
                 if event.key == K_F4:
-                    #toggle drawing hitboxes of enemies
+                    # toggle drawing hitboxes of enemies
                     self.show_hitboxes = not(self.show_hitboxes)
 
             if event.type == KEYUP:
@@ -679,40 +684,47 @@ class Game(object):
                             player.movedown = 0
 
     def handle_game_over(self):
-        #first, save highscore
-        #add score to highscores
+        # first, save highscore
+        # add score to highscores
         self.highscores.append(self.score)
-        #sort highscores in descending order
-        self.highscores.sort(reverse = True)
-        #get rid of lowest highscore
+        # sort highscores in descending order
+        self.highscores.sort(reverse=True)
+        # get rid of lowest highscore
         self.highscores.pop(-1)
 
-        #dim screen
+        # dim screen
         screen_dimmer = Dimmer()
         screen_dimmer.dim(darken_factor=200)
 
-        #draw gameover text, including score
+        # draw gameover text, including score
         font = pygame.font.Font(GAME_OVER_FONT, 58)
-        draw_text('GAME OVER', font, self.screen, (WINDOW_WIDTH / 2), 20, color = RED, position = 'center')
+        draw_text('GAME OVER', font, self.screen, (WINDOW_WIDTH / 2),
+                  20, color=RED, position='center')
 
         # show highscores
         draw_text('Score:' + str(self.score), font, self.screen,
-                  (WINDOW_WIDTH / 2), 110, color = WHITE, position = 'center')
-        #render highscores in a smaller font
+                  (WINDOW_WIDTH / 2), 110, color=WHITE, position='center')
+        # render highscores in a smaller font
         font = pygame.font.Font(GAME_OVER_FONT, 36)
-        draw_text('HIGHSCORES', font, self.screen, WINDOW_WIDTH / 2, 150, color = WHITE, position = 'center')
+        draw_text('HIGHSCORES', font, self.screen, WINDOW_WIDTH / 2,
+                  150, color=WHITE, position='center')
         for i in range(len(self.highscores)):
-            draw_text(str(self.highscores[i]), font, self.screen, WINDOW_WIDTH / 2, 180 + (i * 30), color = WHITE, position = 'center')
+            x = WINDOW_WIDTH / 2
+            y = 180 + 30 * i
+            draw_text(
+                str(self.highscores[i]), font, self.screen, x, y,
+                color=WHITE, position='center')
             if self.highscores[i] == self.score:
                 draw_text("YOU ->" + " " * len(str(self.highscores[i])),
-                          self.font, screen, WINDOW_WIDTH / 2 - 20,
-                          180 + (i * 30) + 10, color = WHITE,
-                          position = 'bottomright')
+                          self.font, screen, x - 20, y + 10,
+                          color=WHITE, position='bottomright')
 
         pygame.display.update()
-        time.sleep(1) # wait 1 second to stop people accidentally skipping this screen
+        # wait 1 second to stop people accidentally skipping this screen
+        time.sleep(1)
         font = pygame.font.Font(GAME_OVER_FONT, 58)
-        draw_text('Press Enter to play again.', font, self.screen, (WINDOW_WIDTH / 2), 60, color = WHITE, position = 'center') # tell the player to press a key to continue
+        draw_text('Press Enter to play again.', font, self.screen,
+                  WINDOW_WIDTH / 2, 60, color=WHITE, position='center')
         pygame.display.update()
         self.wait_for_keypress(certainkey=K_RETURN)
         screen_dimmer.undim()
@@ -721,18 +733,23 @@ class Game(object):
         self.init_game()
 
     def wait_for_keypress(self, certainkey=None):
-        #wait until the player presses a key
-        pygame.event.clear() # clears the pygame events, ensuring it isn't going to register an old keypress
+        # wait until the player presses a key
+        # clears the pygame events, ensuring it isn't going to register an old
+        # keypress
+        pygame.event.clear()
         while True:
-            self.clock.tick(5) #5 frames a second; nothing's moving, so it should be ok: the player won't notice
+            # 5 frames a second; nothing's moving, so it should be ok: the
+            # player won't notice
+            self.clock.tick(5)
             for event in pygame.event.get():
-                if event.type == QUIT: #if player tries to close the window, terminate everything
+                # if player tries to close the window, terminate everything
+                if event.type == QUIT:
                     self.exit()
                 if event.type == KEYDOWN:
-                    if event.key == K_ESCAPE: # pressing escape quits
+                    if event.key == K_ESCAPE:  # pressing escape quits
                         self.main_menu()
-                    elif certainkey == None:
-                        return #all other keys just return
+                    elif certainkey is None:
+                        return  # all other keys just return
                     elif event.key == certainkey:
                         return
 
@@ -763,45 +780,51 @@ class Game(object):
             self.time_since_last_frame = self.clock.tick(MAX_FPS)
 
             event = self.handle_keys()
-            if event == "exit": #exit to main menu
+            if event == "exit":  # exit to main menu
                 self.main_menu()
 
-            #check if player has hit an enemy using smaller hitbox
+            # check if player has hit an enemy using smaller hitbox
             for player in self.players:
-                if playertouchingenemy(player.rect.inflate(-14, -14), self.enemies):
-                    #first, clear the player's sprite with background
+                player_rect = player.rect.inflate(-14, -14)
+                if playertouchingenemy(player_rect, self.enemies):
+                    # first, clear the player's sprite with background
                     self.screen.blit(self.background, player.rect, player.rect)
                     self.players.remove(player)
-            #check if all players are dead or not
-                    #check seperate from death check to stop starting with no players
+            # check if all players are dead or not
+            # check seperate from death check to stop starting with no
+            # players
             if len(self.players) == 0:
-                #show game over screen
+                # show game over screen
                 self.handle_game_over()
                 # break the loop
                 self.game_over = True
-            #new level if time
+            # new level if time
             self.time_until_new_level -= self.time_since_last_frame
             if self.time_until_new_level <= 0:
                 self.level += 1
                 self.time_until_new_level = LEVEL_LENGTH
-                #spawn 'new level' enemy
+                # spawn 'new level' enemy
                 x = WINDOW_WIDTH - 10
                 y = random.randint(50, WINDOW_HEIGHT - 50)
                 speed = ENEMY_MAX_SPEED
                 textsprite = "LEVEL " + str(self.level)
-                enemyfont = pygame.font.Font(None, 50) # new level enemy uses pygame default font, due to munro having bad hitbox at large sizes
-                self.enemies.append(Enemy(x, y, speed, self, text = textsprite, font = enemyfont, color = RED))
-            #spawn enemies
+                # new level enemy uses pygame default font, due to munro having
+                # bad hitbox at large sizes
+                enemyfont = pygame.font.Font(None, 50)
+                self.enemies.append(Enemy(
+                    x, y, speed, self, text=textsprite, font=enemyfont,
+                    color=RED))
+            # spawn enemies
             self.spawntime += self.time_since_last_frame
-            #spawn enemies on right if SPAWN_DELAY time has passed
+            # spawn enemies on right if SPAWN_DELAY time has passed
             if self.spawntime >= ENEMY_SPAWNDELAY / math.sqrt(self.level):
                 self.spawntime -= ENEMY_SPAWNDELAY / math.sqrt(self.level)
                 self.score += 1
                 self.spawn_number_enemies()
-                                            ###RENDER EVERYTHING###
+
+            # RENDER EVERYTHING
             for player in self.players:
                 self.screen.blit(self.background, player.rect, player.rect)
-            #screen.blit(background, (0, 0))
             for enemy in self.enemies:
                 self.screen.blit(self.background, enemy.rect, enemy.rect)
             for player in self.players:
@@ -812,57 +835,59 @@ class Game(object):
 
             self.old_textrects = []
 
-
-            #draw score at top-middle of screen
+            # draw score at top-middle of screen
             font = pygame.font.Font(GUI_FONT, 20)
             self.old_textrects.append(
                 draw_text('Score:' + str(self.score), font, self.screen,
-                          WINDOW_WIDTH / 2, 20, color = RED, position = 'center')
-                )
+                          WINDOW_WIDTH / 2, 20, color=RED, position='center')
+            )
 
-            if self.show_debug_info: #show all debug info if enabled
+            if self.show_debug_info:  # show all debug info if enabled
 
-                #draw FPS at topright screen
+                # draw FPS at topright screen
                 fps = 1.0 / self.time_since_last_frame * 1000
                 self.old_textrects.append(
-                    draw_text('FPS:' + str(int(fps))  + '/' + str(MAX_FPS),
-                              font, self.screen, WINDOW_WIDTH - 100, 10,
-                              color = WHITE, background = BLACK, position = 'topleft')
-                    )
+                    draw_text(
+                        'FPS:' + str(int(fps)) + '/' + str(MAX_FPS),
+                        font, self.screen, WINDOW_WIDTH - 100, 10,
+                        color=WHITE, background=BLACK, position='topleft')
+                )
 
-                #draw frame time: time it takes to render each frame
+                # draw frame time: time it takes to render each frame
                 self.old_textrects.append(
                     draw_text('FT: ' + str(self.time_since_last_frame), font,
                               self.screen, WINDOW_WIDTH - 100, 25,
-                              color = WHITE, background = BLACK,
-                              position = 'topleft')
-                    )
+                              color=WHITE, background=BLACK,
+                              position='topleft')
+                )
 
-                #draw number of enemies on topright, for debug
+                # draw number of enemies on topright, for debug
                 self.old_textrects.append(
                     draw_text("Numbers:" + str(len(self.enemies)), font,
                               self.screen, WINDOW_WIDTH - 100, 40,
-                              color = WHITE, background = BLACK,
-                              position = "topleft")
-                    )
+                              color=WHITE, background=BLACK,
+                              position="topleft")
+                )
 
-            #draw enemies in enemies
+            # draw enemies in enemies
             for enemy in self.enemies[:]:
                 enemy.update(self.time_since_last_frame)
                 if self.show_hitboxes:
-                    #draw slightly darker then background rectangle
-                    pygame.draw.rect(self.screen, ([n * 0.8 for n in BACKGROUND_COLOR]), enemy.rect)
+                    # draw slightly darker then background rectangle
+                    pygame.draw.rect(
+                        self.screen, COLLISION_RECT_COLOR, enemy.rect)
             for enemy in self.enemies[:]:
                 self.screen.blit(enemy.image, enemy.rect)
 
-            #draw player
+            # draw player
             for player in self.players:
                 self.screen.blit(player.image, player.rect)
                 if self.show_hitboxes:
-                    #draw player rect
-                    pygame.draw.rect(self.screen, ([n * 0.8 for n in WHITE]), player.rect.inflate(-14, -14))
+                    # draw player rect
+                    pygame.draw.rect(
+                        self.screen, WHITE, player.rect.inflate(-14, -14))
 
-            #blit to screen
+            # blit to screen
             pygame.display.update()
 
             pygame.event.pump()
@@ -881,4 +906,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
