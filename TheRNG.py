@@ -16,7 +16,6 @@ if not pygame.mixer: print 'Warning, sound disabled'
 #setting up constants
 WINDOW_WIDTH=640
 WINDOW_HEIGHT=480
-windowsurface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), 0, 32)
 BLACK = (0,0,0)
 WHITE=(255,255,255)
 RED=(255,0,0)
@@ -134,7 +133,7 @@ class Enemy(pygame.sprite.Sprite):
     appearance as text or sprite if text is not specified
     functions: reinit, update"""
 
-    def __init__(self, x, y, speed, text = None, font = None, color = WHITE, erratic = False, aimed = False,
+    def __init__(self, x, y, speed, game, text = None, font = None, color = WHITE, erratic = False, aimed = False,
             rotated = False):
         pygame.sprite.Sprite.__init__(self)
         if text:
@@ -153,6 +152,7 @@ class Enemy(pygame.sprite.Sprite):
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         self.speed = speed
+        self.game = game
         self.erratic = erratic
         self.aimed = aimed
         self.reinit()
@@ -162,9 +162,8 @@ class Enemy(pygame.sprite.Sprite):
         if not self.aimed:
             self.movepos = [-self.speed,0]#enemies are by default moving left
         else:
-            global players
             #pick random player to move towards
-            player = players[random.randint(0, len(players) - 1)]
+            player = self.game.players[random.randint(0, len(self.game.players) - 1)]
                 ##WARNING: TRIGONOMETRY##
             #calculate vector to player
             self.movepos = [player.pos[0] - self.pos[0], player.pos[1] - self.pos[1]]
@@ -185,7 +184,7 @@ class Enemy(pygame.sprite.Sprite):
             self.pos = newpos
             self.rect.x, self.rect.y = newpos
         else:
-            enemies.remove(self)
+            self.game.enemies.remove(self)
 
 
 
@@ -274,24 +273,21 @@ def load_sound(name):
 
 def terminate():
     print 'goodbye'
-    #save highscores
-    save_highscores()
     pygame.quit()
     sys.exit()
 
 
-def save_highscores():
-    global highscores
+def save_highscores(highscores):
     file = shelve.open('data/highscores', 'n')
     file['highscores'] = highscores
     file.close()
 
 
 def load_highscores():
-    global highscores
     file = shelve.open('data/highscores', 'r')
     highscores = file['highscores']
     file.close()
+    return highscores
 
 
 def playertouchingenemy(playerrect, enemies):
@@ -300,159 +296,6 @@ def playertouchingenemy(playerrect, enemies):
             return True
     return False
 
-
-def handle_keys():
-    global players
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            terminate()
-
-        if event.type == KEYDOWN:
-            for player in players:
-                if player.controls == 'all' or player.controls == 'wasd':
-                    if event.key == ord('a'):
-                        player.moveleft = 1
-                    if event.key == ord('d'):
-                        player.moveright = 1
-                    if event.key == ord('w'):
-                        player.moveup = 1
-                    if event.key == ord('s'):
-                        player.movedown = 1
-
-                if player.controls == 'all' or player.controls == 'arrows':
-                    if event.key == K_LEFT:
-                        player.moveleft = 1
-                    if event.key == K_RIGHT:
-                        player.moveright = 1
-                    if event.key == K_UP:
-                        player.moveup = 1
-                    if event.key == K_DOWN:
-                        player.movedown = 1
-                if player.controls == 'all' or player.controls == 'tfgh':
-                    if event.key == ord('f'):
-                        player.moveleft = 1
-                    if event.key == ord('h'):
-                        player.moveright = 1
-                    if event.key == ord('t'):
-                        player.moveup = 1
-                    if event.key == ord('g'):
-                        player.movedown = 1
-                if player.controls == 'all' or player.controls == 'ijkl':
-                    if event.key == ord('j'):
-                        player.moveleft = 1
-                    if event.key == ord('l'):
-                        player.moveright = 1
-                    if event.key == ord('i'):
-                        player.moveup = 1
-                    if event.key == ord('k'):
-                        player.movedown = 1
-
-                if player.controls == 'all' or player.controls == 'numpad':
-                    if event.key == K_KP4:
-                        player.moveleft = 1
-                    if event.key == K_KP6:
-                        player.moveright = 1
-                    if event.key == K_KP8:
-                        player.moveup = 1
-                    if event.key == K_KP2:
-                        player.movedown = 1
-            if event.key == K_F3:
-                global show_debug_info
-                #toggle showing debug info
-                show_debug_info = not(show_debug_info)
-            if event.key == K_F4:
-                global show_hitboxes
-                #toggle drawing hitboxes of enemies
-                show_hitboxes = not(show_hitboxes)
-
-        if event.type == KEYUP:
-            if event.key == K_ESCAPE:
-                return 'exit'
-            for player in players:
-                if player.controls == 'all' or player.controls == 'arrows':
-                    if event.key == K_LEFT:
-                        player.moveleft = 0
-                    if event.key == K_RIGHT:
-                        player.moveright = 0
-                    if event.key == K_UP:
-                        player.moveup = 0
-                    if event.key == K_DOWN:
-                        player.movedown = 0
-
-                if player.controls == 'all' or player.controls == 'wasd':
-                    if event.key == ord('a'):
-                        player.moveleft = 0
-                    if event.key == ord('d'):
-                        player.moveright = 0
-                    if event.key == ord('w'):
-                        player.moveup = 0
-                    if event.key == ord('s'):
-                        player.movedown = 0
-
-                if player.controls == 'all' or player.controls == 'tfgh':
-                    if event.key == ord('f'):
-                        player.moveleft = 0
-                    if event.key == ord('h'):
-                        player.moveright = 0
-                    if event.key == ord('t'):
-                        player.moveup = 0
-                    if event.key == ord('g'):
-                        player.movedown = 0
-
-                if player.controls == 'all' or player.controls == 'ijkl':
-                    if event.key == ord('j'):
-                        player.moveleft = 0
-                    if event.key == ord('l'):
-                        player.moveright = 0
-                    if event.key == ord('i'):
-                        player.moveup = 0
-                    if event.key == ord('k'):
-                        player.movedown = 0
-
-                if player.controls == 'all' or player.controls == 'numpad':
-                    if event.key == K_KP4:
-                        player.moveleft = 0
-                    if event.key == K_KP6:
-                        player.moveright = 0
-                    if event.key == K_KP8:
-                        player.moveup = 0
-                    if event.key == K_KP2:
-                        player.movedown = 0
-
-def game_over(show_highscores = True, save_highscores = True):
-    #basic game over screen
-
-    #first, save highscore
-    if save_highscores == True:
-        global score, highscores, score
-        #add score to highscores
-        highscores.append(score)
-        #sort highscores in descending order
-        highscores.sort(reverse = True)
-        #get rid of lowest highscore
-        highscores.pop(-1)
-    #dim screen
-    screen_dimmer = Dimmer()
-    screen_dimmer.dim(darken_factor=200)
-    #draw gameover text, including score
-    font = pygame.font.Font(GAME_OVER_FONT, 58)
-    draw_text('GAME OVER', font, screen, (WINDOW_WIDTH / 2), 20, color = RED, position = 'center')
-    if  show_highscores == True:
-        draw_text('Score:' + str(score), font, screen, (WINDOW_WIDTH / 2), 110, color = WHITE, position = 'center')
-        #render highscores in a smaller font
-        font = pygame.font.Font(GAME_OVER_FONT, 36)
-        draw_text('HIGHSCORES', font, screen, WINDOW_WIDTH / 2, 150, color = WHITE, position = 'center')
-        for i in range(len(highscores)):
-            draw_text(str(highscores[i]), font, screen, WINDOW_WIDTH / 2, 180 + (i * 30), color = WHITE, position = 'center')
-            if highscores[i] == score:
-                draw_text("YOU ->" + " " * len(str(highscores[i])), font, screen, WINDOW_WIDTH / 2 - 20, 180 + (i * 30) + 10, color = WHITE, position = 'bottomright')
-    pygame.display.update()
-    time.sleep(1) # wait 1 second to stop people accidentally skipping this screen
-    font = pygame.font.Font(GAME_OVER_FONT, 58)
-    draw_text('Press Enter to play again.', font, screen, (WINDOW_WIDTH / 2), 60, color = WHITE, position = 'center') # tell the player to press a key to continue
-    pygame.display.update()
-    wait_for_keypress(certainkey=K_RETURN)
-    screen_dimmer.undim()
 
 
 def draw_text(text, font, surface, x, y, color = WHITE, background = None, position = "topleft"):
@@ -473,421 +316,567 @@ def draw_text(text, font, surface, x, y, color = WHITE, background = None, posit
     return textrect.inflate(2,2) #for knowing where to redraw the background
 
 
-def wait_for_keypress(certainkey=None):
-    #wait until the player presses a key
-    global clock
-    pygame.event.clear() # clears the pygame events, ensuring it isn't going to register an old keypress
-    while True:
-        clock.tick(5) #5 frames a second; nothing's moving, so it should be ok: the player won't notice
-        for event in pygame.event.get():
-            if event.type == QUIT: #if player tries to close the window, terminate everything
-                terminate()
-            if event.type == KEYDOWN:
-                if event.key == K_ESCAPE: # pressing escape quits
-                    main_menu()
-                elif certainkey == None:
-	            return #all other keys just return
-	        elif event.key == certainkey:
-	            return
 
 
-def menu(title, options, titlefont, optionfont, titlecolor, optioncolor, selectedoptioncolor,
-         space_between_options = 20, space_below_title = 50, enemies_background = False, option_selected = 0):
-    #basic menu; title in titlecolor and titlefont, options in optioncolor and optionfont.
-    #arrow keys are used to navigate and selected option is displayed in selectedoptioncolor
-    global screen, background, clock, enemies
-    enemies = []
-    spawntimer = pygame.time.Clock()
-    spawntime = 0
-    screen_dimmer = Dimmer()
+class Game(object):
+    base_enemy_spawn_delay = 500 # divided by current level
+    base_level_length = 6000 # in milliseconds
+    enemy_min_speed = 0.01
+    enemy_max_speed = 0.2
+    background_color = DARK_GREEN
+    show_hitboxes = False
+    show_debug_info = False
+    hotseat_multiplayer=False
+    # if controls == '', player is not playing
+    types_of_controls = ['wasd', 'arrows', 'tfgh', 'ijkl', 'numpad', '' ]
+    # default controls for each player
+    players_controls = ['wasd', 'arrows', 'tfgh', 'ijkl']
+    def __init__(self, screen):
+        self.screen = screen
+        self.clock = pygame.time.Clock()
 
-    while 1:
-        time_since_last_frame = clock.tick(MAX_FPS)
-        #clear screen with backgroundcolor
-        screen_dimmer.undim()
-        screen.blit(background, (0,0))
+        self.background = pygame.Surface(screen.get_size()).convert()
+        self.background.fill(BACKGROUND_COLOR)
 
-        if enemies_background:
-            #draw background fanciness
-            #scrolling enemies
-            spawntime += spawntimer.tick()
-            if spawntime >= ENEMY_SPAWNDELAY:
-                spawntime -= ENEMY_SPAWNDELAY
-                x = WINDOW_WIDTH - 10
-                y = random.randint(0, WINDOW_HEIGHT)
-                speed = random.uniform(ENEMY_MIN_SPEED,ENEMY_MAX_SPEED)
-                textsprite = random.choice([str(random.randint(1,1024)) ])
-                enemies.append(Enemy(x, y, speed, text = textsprite))
-            for object in enemies[:]:
-                object.update(time_since_last_frame)
-                screen.blit(object.image, object.rect)
-        #then, darken the screen without the title/options
-        screen_dimmer.dim(darken_factor=200)
-        #draw title and options
-        draw_text(title, titlefont, screen, (WINDOW_WIDTH / 2), 50, color = titlecolor, position = 'center')
-        for i in range(len(options)):
-            if option_selected == i:
-                draw_text(options[i], optionfont, screen, (WINDOW_WIDTH / 2), space_below_title + 30 + (i + 1) * space_between_options, color = selectedoptioncolor, position = 'center')
+        font = pygame.font.Font(GUI_FONT, 12)
+        text = font.render("By Matthew PFeiffer", 1, WHITE)
+        textpos = text.get_rect()
+        textpos.centerx = self.background.get_rect().centerx
+        self.background.blit(text, textpos)
+
+        #load highscores from data/highscores
+        try:
+            self.highscores = load_highscores()
+        except:
+            #get new highscores if it cannot load highscores
+            self.highscores = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+        self.init_game()
+
+    def init_game(self):
+        self.players = []
+        self.enemies = []
+        self.level = 1
+        #old textrects: used for filling background color
+        self.old_textrects = []
+
+    def menu(self, title, options, main_menu=False, option_selected=0):
+        titlecolor = RED
+        optioncolor = WHITE
+        selectedoptioncolor = RED
+        space_below_title = 50
+        if main_menu:
+            titlefont = pygame.font.Font(MENU_FONT, 100)
+            optionfont = pygame.font.Font(MENU_FONT, 50)
+            enemies_background = True
+        else:
+            titlefont = pygame.font.Font(MENU_FONT, 50)
+            optionfont = pygame.font.Font(MENU_FONT, 25)
+            enemies_background = False
+        space_between_options = optionfont.get_height()
+
+        #basic menu; title in titlecolor and titlefont, options in optioncolor and optionfont.
+        #arrow keys are used to navigate and selected option is displayed in selectedoptioncolor
+        self.enemies = []
+        spawntimer = pygame.time.Clock()
+        spawntime = 0
+        screen_dimmer = Dimmer()
+
+        while 1:
+            time_since_last_frame = self.clock.tick(MAX_FPS)
+            #clear screen with backgroundcolor
+            screen_dimmer.undim()
+            self.screen.blit(self.background, (0,0))
+
+            if enemies_background:
+                #draw background fanciness
+                #scrolling enemies
+                spawntime += spawntimer.tick()
+                if spawntime >= ENEMY_SPAWNDELAY:
+                    spawntime -= ENEMY_SPAWNDELAY
+                    x = WINDOW_WIDTH - 10
+                    y = random.randint(0, WINDOW_HEIGHT)
+                    speed = random.uniform(ENEMY_MIN_SPEED,ENEMY_MAX_SPEED)
+                    textsprite = random.choice([str(random.randint(1,1024)) ])
+                    self.enemies.append(Enemy(x, y, speed, self, text = textsprite))
+                for object in self.enemies[:]:
+                    object.update(time_since_last_frame)
+                    self.screen.blit(object.image, object.rect)
+            #then, darken the screen without the title/options
+            screen_dimmer.dim(darken_factor=200)
+            #draw title and options
+            draw_text(title, titlefont, self.screen, (WINDOW_WIDTH / 2), 50, color = titlecolor, position = 'center')
+            for i in range(len(options)):
+                if option_selected == i:
+                    draw_text(options[i], optionfont, self.screen, (WINDOW_WIDTH / 2), space_below_title + 30 + (i + 1) * space_between_options, color = selectedoptioncolor, position = 'center')
+                else:
+                    draw_text(options[i], optionfont, self.screen, (WINDOW_WIDTH / 2), space_below_title + 30 + (i + 1) * space_between_options, color = optioncolor, position = 'center')
+            #update display
+            pygame.display.update()
+            #handle keys for menu
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    self.exit()
+
+                if event.type == KEYDOWN:
+                    if event.key == K_UP or event.key == ord('w'):
+                        option_selected -= 1
+                        if option_selected < 0:
+                            option_selected = len(options) - 1
+                    elif event.key == K_DOWN or event.key == ord('s'):
+                        option_selected += 1
+                        if option_selected > len(options) - 1:
+                            option_selected = 0
+                    elif event.key == K_ESCAPE: # pressing escape quits
+
+                        return "exit"
+                    elif event.key == K_RETURN:
+                        return option_selected
+
+    def main_menu(self):
+        while 1:
+            choice = self.menu("THE RNG", ["Play", "Options", "Exit"],
+                               main_menu=True)
+
+            if choice == 0:
+                while 1:
+                    self.run()
+
+            elif choice == 1:
+                self.options_menu()
+
+            elif choice == 2: # 'exit'
+                self.exit()
+
+            elif choice == 'exit': # if player presses ESC or tries to exit window
+                self.exit()
+
+    def exit(self):
+        save_highscores(self.highscores)
+        terminate()
+
+    def options_menu(self):
+        option_selected = 0
+        while 1:
+
+            if self.hotseat_multiplayer:
+                #if hotseat, show controls for all players
+                options = [
+                        "Show hitboxes " + str(self.show_hitboxes),
+                        "Hotseat multiplayer " + str(self.hotseat_multiplayer),
+                        "Player 1 controls = " + self.players_controls[0],
+                        "Player 2 controls = " + self.players_controls[1],
+                        "Player 3 controls = " + self.players_controls[2],
+                        "Player 4 controls = " + self.players_controls[3],
+                        "Back"
+                        ]
+                #indicate if any player is not playing
+                for i in range(len(options[2:6])):
+                    if self.players_controls[i] == '':
+                        options[i+2] = options[i+2][:9] + "Not Playing"
+
             else:
-                draw_text(options[i], optionfont, screen, (WINDOW_WIDTH / 2), space_below_title + 30 + (i + 1) * space_between_options, color = optioncolor, position = 'center')
-        #update display
-        pygame.display.update()
-        #handle keys for menu
+                options = [
+                        "Show hitboxes " + str(self.show_hitboxes),
+                        "Hotseat multiplayer " + str(self.hotseat_multiplayer),
+                        "Back"
+                        ]
+            choice = self.menu("Options", options,
+                               option_selected = option_selected)
+
+            if choice == 0:
+                #toggle showing hitboxes
+                self.show_hitboxes = not self.show_hitboxes
+                option_selected = 0
+
+            if choice == 1:
+                #toggle hotseat multiplayer
+                self.hotseat_multiplayer = not self.hotseat_multiplayer
+                option_selected = 1
+
+            elif choice == 2:
+                option_selected = 2
+                if self.hotseat_multiplayer:
+                    self.players_controls[0] = self.types_of_controls[self.types_of_controls.index(self.players_controls[0]) - 1]
+                else:
+                    #exit to main menu
+                    break
+            elif choice == 3:
+                option_selected = 3
+                self.players_controls[1] = self.types_of_controls[self.types_of_controls.index(self.players_controls[1]) - 1]
+
+            elif choice == 4:
+                option_selected = 4
+                self.players_controls[2] = self.types_of_controls[self.types_of_controls.index(self.players_controls[2]) - 1]
+
+            elif choice == 5:
+                option_selected = 5
+                self.players_controls[3] = self.types_of_controls[self.types_of_controls.index(self.players_controls[3]) - 1]
+
+            elif choice == 6:
+                break
+
+            elif choice == 'exit':
+                #same, exit to main menu
+                break
+
+    def spawn_number_enemies(self):
+        x = WINDOW_WIDTH - 10
+        y = random.randint(0, WINDOW_HEIGHT)
+        speed = random.uniform(ENEMY_MIN_SPEED,ENEMY_MAX_SPEED)
+        textsprite = random.choice([str(random.randint(1,1024)) ])
+        if self.level >= 4:
+            #1/10 chance of erratic movement from level 4 onward
+            erratic_movement = (1 == random.randint(1,10))
+        else:
+            erratic_movement = False
+        if self.level >= 2:
+            #1/10 chance of aimed movement from level 2 onward
+            aimed = (1 == random.randint(1,10))
+        else:
+            aimed = False
+        if self.level >= 2:
+            #1/4 chance of starting rotated from level 2 onward
+            start_rotated = (1 == random.randint(1,4))
+        else:
+            start_rotated = False
+        #get random font
+        size = random.randint(20,30)
+        font = pygame.font.Font(get_random_font(), size)
+
+        self.enemies.append(Enemy(x, y, speed, self,
+            text = textsprite, font = font, erratic = erratic_movement, aimed = aimed, rotated = start_rotated))
+
+        #spawn enemies on left to encourage player to run
+        #and to look cool
+        x = 10
+        y = random.randint(0, WINDOW_HEIGHT)
+        #fast as the average speed of an enemy
+        speed = (ENEMY_MAX_SPEED + ENEMY_MIN_SPEED) / 2
+        #1/2 chance of number, 1/2 chance of sprite
+        textsprite = random.choice([str(random.randint(1,99999999)) ]) #, None])
+        if self.level >= 3:
+            #after level 3, half of the left enemies move erratically
+            #this makes them look cooler and more terrifying
+            erratic_movement = (1 == random.randint(1,2))
+        else:
+            erratic_movement = False
+        self.enemies.append(Enemy(x, y, speed, self, text = textsprite, font = font, erratic = erratic_movement))
+
+    def handle_keys(self):
         for event in pygame.event.get():
             if event.type == QUIT:
-                terminate()
+                self.exit()
 
             if event.type == KEYDOWN:
-                if event.key == K_UP or event.key == ord('w'):
-                    option_selected -= 1
-                    if option_selected < 0:
-                        option_selected = len(options) - 1
-                elif event.key == K_DOWN or event.key == ord('s'):
-                    option_selected += 1
-                    if option_selected > len(options) - 1:
-                        option_selected = 0
-                elif event.key == K_ESCAPE: # pressing escape quits
+                for player in self.players:
+                    if player.controls == 'all' or player.controls == 'wasd':
+                        if event.key == ord('a'):
+                            player.moveleft = 1
+                        if event.key == ord('d'):
+                            player.moveright = 1
+                        if event.key == ord('w'):
+                            player.moveup = 1
+                        if event.key == ord('s'):
+                            player.movedown = 1
 
-                    return "exit"
-                elif event.key == K_RETURN:
-                    return option_selected
+                    if player.controls == 'all' or player.controls == 'arrows':
+                        if event.key == K_LEFT:
+                            player.moveleft = 1
+                        if event.key == K_RIGHT:
+                            player.moveright = 1
+                        if event.key == K_UP:
+                            player.moveup = 1
+                        if event.key == K_DOWN:
+                            player.movedown = 1
+                    if player.controls == 'all' or player.controls == 'tfgh':
+                        if event.key == ord('f'):
+                            player.moveleft = 1
+                        if event.key == ord('h'):
+                            player.moveright = 1
+                        if event.key == ord('t'):
+                            player.moveup = 1
+                        if event.key == ord('g'):
+                            player.movedown = 1
+                    if player.controls == 'all' or player.controls == 'ijkl':
+                        if event.key == ord('j'):
+                            player.moveleft = 1
+                        if event.key == ord('l'):
+                            player.moveright = 1
+                        if event.key == ord('i'):
+                            player.moveup = 1
+                        if event.key == ord('k'):
+                            player.movedown = 1
 
+                    if player.controls == 'all' or player.controls == 'numpad':
+                        if event.key == K_KP4:
+                            player.moveleft = 1
+                        if event.key == K_KP6:
+                            player.moveright = 1
+                        if event.key == K_KP8:
+                            player.moveup = 1
+                        if event.key == K_KP2:
+                            player.movedown = 1
+                if event.key == K_F3:
+                    #toggle showing debug info
+                    self.show_debug_info = not(self.show_debug_info)
+                if event.key == K_F4:
+                    #toggle drawing hitboxes of enemies
+                    self.show_hitboxes = not(self.show_hitboxes)
 
-def main_menu():
-    while 1:
-        choice = menu("THE RNG", ["Play", "Options", "Exit"],
-        pygame.font.Font(MENU_FONT, 100), pygame.font.Font(MENU_FONT, 50), RED, WHITE, RED, space_between_options = 50, enemies_background = True)
+            if event.type == KEYUP:
+                if event.key == K_ESCAPE:
+                    return 'exit'
+                for player in self.players:
+                    if player.controls == 'all' or player.controls == 'arrows':
+                        if event.key == K_LEFT:
+                            player.moveleft = 0
+                        if event.key == K_RIGHT:
+                            player.moveright = 0
+                        if event.key == K_UP:
+                            player.moveup = 0
+                        if event.key == K_DOWN:
+                            player.movedown = 0
 
-        if choice == 0:
-            while 1:
-                arcade()
+                    if player.controls == 'all' or player.controls == 'wasd':
+                        if event.key == ord('a'):
+                            player.moveleft = 0
+                        if event.key == ord('d'):
+                            player.moveright = 0
+                        if event.key == ord('w'):
+                            player.moveup = 0
+                        if event.key == ord('s'):
+                            player.movedown = 0
 
-        elif choice == 1:
-            options_menu()
+                    if player.controls == 'all' or player.controls == 'tfgh':
+                        if event.key == ord('f'):
+                            player.moveleft = 0
+                        if event.key == ord('h'):
+                            player.moveright = 0
+                        if event.key == ord('t'):
+                            player.moveup = 0
+                        if event.key == ord('g'):
+                            player.movedown = 0
 
-        elif choice == 2: # 'exit'
-            terminate()
+                    if player.controls == 'all' or player.controls == 'ijkl':
+                        if event.key == ord('j'):
+                            player.moveleft = 0
+                        if event.key == ord('l'):
+                            player.moveright = 0
+                        if event.key == ord('i'):
+                            player.moveup = 0
+                        if event.key == ord('k'):
+                            player.movedown = 0
 
-        elif choice == 'exit': # if player presses ESC or tries to exit window
-            terminate()
+                    if player.controls == 'all' or player.controls == 'numpad':
+                        if event.key == K_KP4:
+                            player.moveleft = 0
+                        if event.key == K_KP6:
+                            player.moveright = 0
+                        if event.key == K_KP8:
+                            player.moveup = 0
+                        if event.key == K_KP2:
+                            player.movedown = 0
 
+    def handle_game_over(self):
+        #first, save highscore
+        #add score to highscores
+        self.highscores.append(self.score)
+        #sort highscores in descending order
+        self.highscores.sort(reverse = True)
+        #get rid of lowest highscore
+        self.highscores.pop(-1)
 
-def options_menu():
-    global show_hitboxes, hotseat_multiplayer
-    global players_controls, types_of_controls
-    option_selected = 0
-    while 1:
-        if show_hitboxes:
-            hitboxes_shown = "True"
-        else:
-            hitboxes_shown = "False"
-        if hotseat_multiplayer:
-            hotseat_multiplayer_enabled = "True"
-        else:
-            hotseat_multiplayer_enabled = "False"
+        #dim screen
+        screen_dimmer = Dimmer()
+        screen_dimmer.dim(darken_factor=200)
 
-        if hotseat_multiplayer:
-            #if hotseat, show controls for all players
-            options = [
-                      "Show hitboxes " + hitboxes_shown,
-                      "Hotseat multiplayer " + hotseat_multiplayer_enabled,
-                      "Player 1 controls = " + players_controls[0],
-                      "Player 2 controls = " + players_controls[1],
-                      "Player 3 controls = " + players_controls[2],
-                      "Player 4 controls = " + players_controls[3],
-                      "Back"
-                      ]
-            #indicate if any player is not playing
-            for i in range(len(options[2:6])):
-                if players_controls[i] == '':
-                    options[i+2] = options[i+2][:9] + "Not Playing"
+        #draw gameover text, including score
+        font = pygame.font.Font(GAME_OVER_FONT, 58)
+        draw_text('GAME OVER', font, self.screen, (WINDOW_WIDTH / 2), 20, color = RED, position = 'center')
 
-        else:
-            options = [
-                      "Show hitboxes " + hitboxes_shown,
-                      "Hotseat multiplayer " + hotseat_multiplayer_enabled,
-                      "Back"
-                      ]
-        choice = menu("Options",
-                                  options,
-                      pygame.font.Font(MENU_FONT, 50),
-                      pygame.font.Font(MENU_FONT, 25),
-                      RED, WHITE, RED,
-                      option_selected = option_selected)
+        # show highscores
+        draw_text('Score:' + str(self.score), font, self.screen,
+                  (WINDOW_WIDTH / 2), 110, color = WHITE, position = 'center')
+        #render highscores in a smaller font
+        font = pygame.font.Font(GAME_OVER_FONT, 36)
+        draw_text('HIGHSCORES', font, self.screen, WINDOW_WIDTH / 2, 150, color = WHITE, position = 'center')
+        for i in range(len(self.highscores)):
+            draw_text(str(self.highscores[i]), font, self.screen, WINDOW_WIDTH / 2, 180 + (i * 30), color = WHITE, position = 'center')
+            if self.highscores[i] == self.score:
+                draw_text("YOU ->" + " " * len(str(self.highscores[i])),
+                          self.font, screen, WINDOW_WIDTH / 2 - 20,
+                          180 + (i * 30) + 10, color = WHITE,
+                          position = 'bottomright')
 
-        if choice == 0:
-            #toggle showing hitboxes
-            show_hitboxes = not show_hitboxes
-            option_selected = 0
-
-        if choice == 1:
-            #toggle hotseat multiplayer
-            hotseat_multiplayer = not hotseat_multiplayer
-            option_selected = 1
-
-        elif choice == 2:
-            option_selected = 2
-            if hotseat_multiplayer:
-                players_controls[0] = types_of_controls[types_of_controls.index(players_controls[0]) - 1]
-            else:
-                #exit to main menu
-                break
-        elif choice == 3:
-            option_selected = 3
-            players_controls[1] = types_of_controls[types_of_controls.index(players_controls[1]) - 1]
-
-        elif choice == 4:
-            option_selected = 4
-            players_controls[2] = types_of_controls[types_of_controls.index(players_controls[2]) - 1]
-
-        elif choice == 5:
-            option_selected = 5
-            players_controls[3] = types_of_controls[types_of_controls.index(players_controls[3]) - 1]
-
-        elif choice == 6:
-            break
-
-        elif choice == 'exit':
-            #same, exit to main menu
-            break
-
-
-def level_completed_screen():
-    #basic level completed screen
-    #dim screen
-    screen_dimmer = Dimmer()
-    screen_dimmer.dim(darken_factor=150)
-    #draw gameover text, including score
-    font = pygame.font.SysFont(None, 58)
-    draw_text('LEVEL COMPLETE', font, screen, (WINDOW_WIDTH / 2), 20, color = BLUE, position = 'center')
-    draw_text('Press Enter to continue.', font, screen, (WINDOW_WIDTH / 2), 60, color = WHITE, position = 'center')
-    pygame.display.flip()
-    wait_for_keypress(certainkey=K_RETURN)
-    screen_dimmer.undim()
-
-
-def arcade():
-    global players, enemies, screen, score, clock, background, highscores, level, show_hitboxes, show_debug_info
-    global hotseat_multiplayer
-    global players_controls
-
-    #init player(s) and enemies
-    if hotseat_multiplayer:
-        players = [Player(controls) for controls in players_controls if controls != '']
-    else:
-        players = [Player()]
-    enemies = []
-    #start at level 1
-    level = 1
-
-    #old textrects: used for filling background color
-    old_textrects = []
-
-    # Blit everything to the screen
-    screen.blit(background, (0, 0))
-    pygame.display.update()
-    score = 0
-    spawntime = 0
-    clock.tick() # reset clock to 0
-    time_until_new_level = LEVEL_LENGTH
-    # main loop
-    time.sleep(0.001) # sleep 1 millisecond at game start to prevent error when trying to divide by time_since_last_frame when it is zero
-    game_is_over = False
-    while game_is_over == False:
-        # Make sure game doesn't run at more than MAX_FPS frames per second
-        time_since_last_frame = clock.tick(MAX_FPS)
-
-        event = handle_keys()
-        if event == "exit": #exit to main menu
-            main_menu()
-
-        #check if player has hit an enemy using smaller hitbox
-        for player in players:
-            if playertouchingenemy(player.rect.inflate(-14, -14), enemies):
-                #first, clear the player's sprite with background
-                screen.blit(background, player.rect, player.rect)
-                players.remove(player)
-        #check if all players are dead or not
-                #check seperate from death check to stop starting with no players
-        if len(players) == 0:
-            #show game over screen
-            game_over()
-            # break the loop
-            game_is_over = True
-        #new level if time
-        time_until_new_level -= time_since_last_frame
-        if time_until_new_level <= 0:
-            level += 1
-            time_until_new_level = LEVEL_LENGTH
-            #spawn 'new level' enemy
-            x = WINDOW_WIDTH - 10
-            y = random.randint(50, WINDOW_HEIGHT - 50)
-            speed = ENEMY_MAX_SPEED
-            textsprite = "LEVEL " + str(level)
-            enemyfont = pygame.font.Font(None, 50) # new level enemy uses pygame default font, due to munro having bad hitbox at large sizes
-            enemies.append(Enemy(x, y, speed, text = textsprite, font = enemyfont, color = RED))
-        #spawn enemies
-        spawntime += time_since_last_frame
-        #spawn enemies on right if SPAWN_DELAY time has passed
-        if spawntime >= ENEMY_SPAWNDELAY / math.sqrt(level):
-            spawntime -= ENEMY_SPAWNDELAY / math.sqrt(level)
-            score += 1
-            spawn_number_enemies(level)
-                                           ###RENDER EVERYTHING###
-        ###draw background color everywhere
-        #windowsurface.fill(windowcolor)
-        for player in players:
-            screen.blit(background, player.rect, player.rect)
-        #screen.blit(background, (0, 0))
-        for enemy in enemies:
-            screen.blit(background, enemy.rect, enemy.rect)
-        for player in players:
-            player.update(time_since_last_frame)
-
-        for rect in old_textrects:
-            screen.blit(background, rect, rect)
-
-        old_textrects = []
-
-
-        #draw score at top-middle of screen
-        font = pygame.font.Font(GUI_FONT, 20)
-        old_textrects.append(
-            draw_text('Score:' + str(score), font, screen, WINDOW_WIDTH / 2, 20, color = RED, position = 'center')
-            )
-
-
-        if show_debug_info: #show all debug info if enabled
-
-            #draw FPS at topright screen
-            fps = 1.0 / time_since_last_frame * 1000
-            old_textrects.append(
-                draw_text('FPS:' + str(int(fps))  + '/' + str(MAX_FPS), font, screen, WINDOW_WIDTH - 100, 10, color = WHITE, background = BLACK, position = 'topleft')
-                )
-
-            #draw frame time: time it takes to render each frame
-            old_textrects.append(
-                draw_text('FT: ' + str(time_since_last_frame), font, screen, WINDOW_WIDTH - 100, 25, color = WHITE, background = BLACK, position = 'topleft')
-                )
-
-            #draw number of enemies on topright, for debug
-            old_textrects.append(
-                draw_text("Numbers:" + str(len(enemies)), font, screen, WINDOW_WIDTH - 100, 40, color = WHITE, background = BLACK, position = "topleft")
-                 )
-
-        #draw enemies in enemies
-        for enemy in enemies[:]:
-            enemy.update(time_since_last_frame)
-            if show_hitboxes == True:
-                #draw slightly darker then background rectangle
-                pygame.draw.rect(screen, ([n * 0.8 for n in BACKGROUND_COLOR]), enemy.rect)
-        for enemy in enemies[:]:
-            screen.blit(enemy.image, enemy.rect)
-
-        #draw player
-        for player in players:
-            screen.blit(player.image, player.rect)
-            if show_hitboxes == True:
-                #draw player rect
-                pygame.draw.rect(screen, ([n * 0.8 for n in WHITE]), player.rect.inflate(-14, -14))
-
-        #blit to screen
         pygame.display.update()
+        time.sleep(1) # wait 1 second to stop people accidentally skipping this screen
+        font = pygame.font.Font(GAME_OVER_FONT, 58)
+        draw_text('Press Enter to play again.', font, self.screen, (WINDOW_WIDTH / 2), 60, color = WHITE, position = 'center') # tell the player to press a key to continue
+        pygame.display.update()
+        self.wait_for_keypress(certainkey=K_RETURN)
+        screen_dimmer.undim()
 
-        pygame.event.pump()
+        self.game_over = True
+        self.init_game()
+
+    def wait_for_keypress(self, certainkey=None):
+        #wait until the player presses a key
+        pygame.event.clear() # clears the pygame events, ensuring it isn't going to register an old keypress
+        while True:
+            self.clock.tick(5) #5 frames a second; nothing's moving, so it should be ok: the player won't notice
+            for event in pygame.event.get():
+                if event.type == QUIT: #if player tries to close the window, terminate everything
+                    self.exit()
+                if event.type == KEYDOWN:
+                    if event.key == K_ESCAPE: # pressing escape quits
+                        self.main_menu()
+                    elif certainkey == None:
+                        return #all other keys just return
+                    elif event.key == certainkey:
+                        return
+
+    def run(self):
+        self.init_game()
+        # Blit everything to the screen
+        self.screen.blit(self.background, (0, 0))
+        pygame.display.update()
+        self.score = 0
+        self.spawntime = 0
+        self.clock.tick()
+        self.time_until_new_level = LEVEL_LENGTH
+        # sleep 1 millisecond at game start to prevent error when trying to
+        # divide by time_since_last_frame when it is zero
+        time.sleep(0.001)
+
+        if self.hotseat_multiplayer:
+            self.players = [Player(controls) for controls in players_controls
+                            if controls != '']
+        else:
+            self.players = [Player()]
+
+        self.game_over = False
+
+        while not self.game_over:
+
+            # Make sure game doesn't run at more than MAX_FPS frames per second
+            self.time_since_last_frame = self.clock.tick(MAX_FPS)
+
+            event = self.handle_keys()
+            if event == "exit": #exit to main menu
+                self.main_menu()
+
+            #check if player has hit an enemy using smaller hitbox
+            for player in self.players:
+                if playertouchingenemy(player.rect.inflate(-14, -14), self.enemies):
+                    #first, clear the player's sprite with background
+                    self.screen.blit(self.background, player.rect, player.rect)
+                    self.players.remove(player)
+            #check if all players are dead or not
+                    #check seperate from death check to stop starting with no players
+            if len(self.players) == 0:
+                #show game over screen
+                self.handle_game_over()
+                # break the loop
+                self.game_over = True
+            #new level if time
+            self.time_until_new_level -= self.time_since_last_frame
+            if self.time_until_new_level <= 0:
+                self.level += 1
+                self.time_until_new_level = LEVEL_LENGTH
+                #spawn 'new level' enemy
+                x = WINDOW_WIDTH - 10
+                y = random.randint(50, WINDOW_HEIGHT - 50)
+                speed = ENEMY_MAX_SPEED
+                textsprite = "LEVEL " + str(self.level)
+                enemyfont = pygame.font.Font(None, 50) # new level enemy uses pygame default font, due to munro having bad hitbox at large sizes
+                self.enemies.append(Enemy(x, y, speed, self, text = textsprite, font = enemyfont, color = RED))
+            #spawn enemies
+            self.spawntime += self.time_since_last_frame
+            #spawn enemies on right if SPAWN_DELAY time has passed
+            if self.spawntime >= ENEMY_SPAWNDELAY / math.sqrt(self.level):
+                self.spawntime -= ENEMY_SPAWNDELAY / math.sqrt(self.level)
+                self.score += 1
+                self.spawn_number_enemies()
+                                            ###RENDER EVERYTHING###
+            for player in self.players:
+                self.screen.blit(self.background, player.rect, player.rect)
+            #screen.blit(background, (0, 0))
+            for enemy in self.enemies:
+                self.screen.blit(self.background, enemy.rect, enemy.rect)
+            for player in self.players:
+                player.update(self.time_since_last_frame)
+
+            for rect in self.old_textrects:
+                self.screen.blit(self.background, rect, rect)
+
+            self.old_textrects = []
 
 
-def spawn_number_enemies(level):
-    global enemies
-    x = WINDOW_WIDTH - 10
-    y = random.randint(0, WINDOW_HEIGHT)
-    speed = random.uniform(ENEMY_MIN_SPEED,ENEMY_MAX_SPEED)
-    textsprite = random.choice([str(random.randint(1,1024)) ])
-    if level >= 4:
-        #1/10 chance of erratic movement from level 4 onward
-        erratic_movement = (1 == random.randint(1,10))
-    else:
-        erratic_movement = False
-    if level >= 2:
-        #1/10 chance of aimed movement from level 2 onward
-        aimed = (1 == random.randint(1,10))
-    else:
-        aimed = False
-    if level >= 2:
-        #1/4 chance of starting rotated from level 2 onward
-        start_rotated = (1 == random.randint(1,4))
-    else:
-        start_rotated = False
-    #get random font
-    size = random.randint(20,30)
-    font = pygame.font.Font(get_random_font(), size)
+            #draw score at top-middle of screen
+            font = pygame.font.Font(GUI_FONT, 20)
+            self.old_textrects.append(
+                draw_text('Score:' + str(self.score), font, self.screen,
+                          WINDOW_WIDTH / 2, 20, color = RED, position = 'center')
+                )
 
-    enemies.append(Enemy(x, y, speed,
-        text = textsprite, font = font, erratic = erratic_movement, aimed = aimed, rotated = start_rotated))
+            if self.show_debug_info: #show all debug info if enabled
 
-    #spawn enemies on left to encourage player to run
-    #and to look cool
-    x = 10
-    y = random.randint(0, WINDOW_HEIGHT)
-    #fast as the average speed of an enemy
-    speed = (ENEMY_MAX_SPEED + ENEMY_MIN_SPEED) / 2
-    #1/2 chance of number, 1/2 chance of sprite
-    textsprite = random.choice([str(random.randint(1,99999999)) ]) #, None])
-    if level >= 3:
-        #after level 3, half of the left enemies move erratically
-        #this makes them look cooler and more terrifying
-        erratic_movement = (1 == random.randint(1,2))
-    else:
-        erratic_movement = False
-    enemies.append(Enemy(x, y, speed, text = textsprite, font = font, erratic = erratic_movement))
+                #draw FPS at topright screen
+                fps = 1.0 / self.time_since_last_frame * 1000
+                self.old_textrects.append(
+                    draw_text('FPS:' + str(int(fps))  + '/' + str(MAX_FPS),
+                              font, self.screen, WINDOW_WIDTH - 100, 10,
+                              color = WHITE, background = BLACK, position = 'topleft')
+                    )
+
+                #draw frame time: time it takes to render each frame
+                self.old_textrects.append(
+                    draw_text('FT: ' + str(self.time_since_last_frame), font,
+                              self.screen, WINDOW_WIDTH - 100, 25,
+                              color = WHITE, background = BLACK,
+                              position = 'topleft')
+                    )
+
+                #draw number of enemies on topright, for debug
+                self.old_textrects.append(
+                    draw_text("Numbers:" + str(len(self.enemies)), font,
+                              self.screen, WINDOW_WIDTH - 100, 40,
+                              color = WHITE, background = BLACK,
+                              position = "topleft")
+                    )
+
+            #draw enemies in enemies
+            for enemy in self.enemies[:]:
+                enemy.update(self.time_since_last_frame)
+                if self.show_hitboxes:
+                    #draw slightly darker then background rectangle
+                    pygame.draw.rect(self.screen, ([n * 0.8 for n in BACKGROUND_COLOR]), enemy.rect)
+            for enemy in self.enemies[:]:
+                self.screen.blit(enemy.image, enemy.rect)
+
+            #draw player
+            for player in self.players:
+                self.screen.blit(player.image, player.rect)
+                if self.show_hitboxes:
+                    #draw player rect
+                    pygame.draw.rect(self.screen, ([n * 0.8 for n in WHITE]), player.rect.inflate(-14, -14))
+
+            #blit to screen
+            pygame.display.update()
+
+            pygame.event.pump()
 
 
 def main():
-    global screen, background, clock, highscores, show_hitboxes, show_debug_info, hotseat_multiplayer
-    global players_controls, types_of_controls
     # Initialise screen and window
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     pygame.display.set_caption("The RNG")
     pygame.display.set_icon(load_image('icon.gif')[0])
 
-    #init fps clock
-    clock = pygame.time.Clock()
-
-    # init background
-    background = pygame.Surface(screen.get_size())
-    background = background.convert()
-    background.fill(BACKGROUND_COLOR)
-    windowsurface.fill(windowcolor)
-
-    #by default, enemy hitboxes are not shaded in
-    show_hitboxes = False
-
-    #and debug info is not shown
-    show_debug_info = False
-
-    #and the game is single player
-    hotseat_multiplayer = False
-
-    #default controls for each player
-    types_of_controls = ['wasd', 'arrows', 'tfgh', 'ijkl', 'numpad', '' ] # if controls == '', player is not playing
-    players_controls = ['wasd', 'arrows', 'tfgh', 'ijkl']
-
-    # Display some text
-    font = pygame.font.Font(GUI_FONT, 12)
-    text = font.render("By Matthew Pfeiffer", 1, WHITE)
-    textpos = text.get_rect()
-    textpos.centerx = background.get_rect().centerx
-    background.blit(text, textpos)
-
-    #load highscores from data/highscores
-    try:
-        load_highscores()
-    except:
-        #get new highscores if it cannot load highscores
-        highscores = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-
-    main_menu()
+    game = Game(screen)
+    game.main_menu()
 
 
 if __name__ == '__main__':
