@@ -47,6 +47,13 @@ GAME_OVER_FONT = None  # None = pygame default, used for game over screen
 # None = pygame default, used for fps/frametime/enemy number indicators in game
 GUI_FONT = None
 
+NUMBER_IMAGES = []
+for i in range(10):
+    image = pygame.image.load(
+        os.path.join("data", "numbers", "%d.png" % i))
+    image.set_colorkey(BLACK)
+    NUMBER_IMAGES.append(image)
+
 
 class Player():
 
@@ -120,17 +127,11 @@ class Enemy(pygame.sprite.Sprite):
     appearance as text or sprite if text is not specified
     functions: reinit, update"""
 
-    def __init__(self, x, y, speed, game, text=None, font=None, color=WHITE,
-                 erratic=False, aimed=False, rotated=False):
+    def __init__(self, x, y, speed, game, image, erratic=False, aimed=False,
+                 rotated=False):
         pygame.sprite.Sprite.__init__(self)
-        if text:
-            if font is None:
-                font = pygame.font.Font(
-                    get_random_font(), random.randint(20, 50))
-            self.image = font.render(text, True, color)
-            self.rect = self.image.get_rect()
-        else:
-            self.image, self.rect = load_image('Enemy.gif')
+        self.image = image
+        self.rect = self.image.get_rect()
         if rotated:
             # rotate the image of the enemy in a random increment of 90
             self.image = pygame.transform.rotate(
@@ -182,6 +183,13 @@ class Enemy(pygame.sprite.Sprite):
             self.game.enemies.remove(self)
 
 
+class TextEnemy(Enemy):
+
+    def __init__(self, x, y, speed, game, text, **kwargs):
+        image = render_number(text)
+        super(TextEnemy, self).__init__(x, y, speed, game, image, **kwargs)
+
+
 class Dimmer:
 
     """class for dimming the screen
@@ -217,6 +225,30 @@ class Dimmer:
             pygame.display.get_surface().blit(self.buffer, (0, 0))
             if not self.keepalive:
                 self.buffer = None
+
+
+def render_number(text_number):
+    font_width = 5
+    font_height = 7
+
+    int_digits = [int(digit) for digit in text_number]
+
+    image_width = sum(NUMBER_IMAGES[d].get_width() for d in int_digits) + \
+        2 * (len(text_number) - 1)
+
+    image = pygame.Surface((image_width, font_height))
+
+    x = 0
+
+    for digit in text_number:
+        int_digit = int(digit)
+        digit_image = NUMBER_IMAGES[int_digit]
+        image.blit(digit_image, ((x, 0), digit_image.get_size()))
+        x += NUMBER_IMAGES[int_digit].get_width() + 2
+        image.set_colorkey(BLACK)
+    scale = random.randint(3, 4)
+    return pygame.transform.scale(
+            image, (image.get_width() * scale, image.get_height() * scale))
 
 
 def load_image(name, colorkey=None):
@@ -400,9 +432,9 @@ class Game(object):
                     x = WINDOW_WIDTH - 10
                     y = random.randint(0, WINDOW_HEIGHT)
                     speed = random.uniform(ENEMY_MIN_SPEED, ENEMY_MAX_SPEED)
-                    textsprite = random.choice([str(random.randint(1, 1024))])
+                    text = random.choice([str(random.randint(1, 1024))])
                     self.enemies.append(
-                        Enemy(x, y, speed, self, text=textsprite))
+                        TextEnemy(x, y, speed, self, text))
                 for object in self.enemies[:]:
                     object.update(time_since_last_frame)
                     self.screen.blit(object.image, object.rect)
@@ -524,7 +556,7 @@ class Game(object):
         x = WINDOW_WIDTH - 10
         y = random.randint(0, WINDOW_HEIGHT)
         speed = random.uniform(ENEMY_MIN_SPEED, ENEMY_MAX_SPEED)
-        textsprite = random.choice([str(random.randint(1, 1024))])
+        text = random.choice([str(random.randint(1, 1024))])
         if self.level >= 4:
             # 1/10 chance of erratic movement from level 4 onward
             erratic_movement = (1 == random.randint(1, 10))
@@ -540,13 +572,10 @@ class Game(object):
             start_rotated = (1 == random.randint(1, 4))
         else:
             start_rotated = False
-        # get random font
-        size = random.randint(20, 30)
-        font = pygame.font.Font(get_random_font(), size)
 
-        self.enemies.append(Enemy(
+        self.enemies.append(TextEnemy(
             x, y, speed, self,
-            text=textsprite, font=font, erratic=erratic_movement, aimed=aimed,
+            text, erratic=erratic_movement, aimed=aimed,
             rotated=start_rotated))
 
         # spawn enemies on left to encourage player to run
@@ -564,9 +593,9 @@ class Game(object):
             erratic_movement = (1 == random.randint(1, 2))
         else:
             erratic_movement = False
-        self.enemies.append(Enemy(
-            x, y, speed, self, text=textsprite, font=font,
-            erratic=erratic_movement))
+
+        self.enemies.append(TextEnemy(
+            x, y, speed, self, text, erratic=erratic_movement))
 
     def handle_keys(self):
         for event in pygame.event.get():
@@ -716,7 +745,7 @@ class Game(object):
                 color=WHITE, position='center')
             if self.highscores[i] == self.score:
                 draw_text("YOU ->" + " " * len(str(self.highscores[i])),
-                          self.font, screen, x - 20, y + 10,
+                          font, screen, x - 20, y + 10,
                           color=WHITE, position='bottomright')
 
         pygame.display.update()
@@ -807,13 +836,12 @@ class Game(object):
                 x = WINDOW_WIDTH - 10
                 y = random.randint(50, WINDOW_HEIGHT - 50)
                 speed = ENEMY_MAX_SPEED
-                textsprite = "LEVEL " + str(self.level)
+                text = "LEVEL " + str(self.level)
                 # new level enemy uses pygame default font, due to munro having
                 # bad hitbox at large sizes
                 enemyfont = pygame.font.Font(None, 50)
                 self.enemies.append(Enemy(
-                    x, y, speed, self, text=textsprite, font=enemyfont,
-                    color=RED))
+                    x, y, speed, self, enemyfont.render(text, True, RED)))
             # spawn enemies
             self.spawntime += self.time_since_last_frame
             # spawn enemies on right if SPAWN_DELAY time has passed
