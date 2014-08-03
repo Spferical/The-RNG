@@ -371,12 +371,6 @@ class Game(object):
         self.background = pygame.Surface(screen.get_size()).convert()
         self.background.fill(BACKGROUND_COLOR)
 
-        font = pygame.font.Font(GUI_FONT, 12)
-        text = font.render("By Matthew PFeiffer", 1, WHITE)
-        textpos = text.get_rect()
-        textpos.centerx = self.background.get_rect().centerx
-        self.background.blit(text, textpos)
-
         # load highscores from data/highscores
         try:
             self.highscores = load_highscores()
