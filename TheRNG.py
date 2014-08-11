@@ -786,7 +786,8 @@ class Game(object):
         time.sleep(0.001)
 
         if self.hotseat_multiplayer:
-            self.players = [Player(controls) for controls in players_controls
+            self.players = [Player(controls)
+                            for controls in self.players_controls
                             if controls != '']
         else:
             self.players = [Player()]
