@@ -406,7 +406,6 @@ class Game(object):
             enemies_background = False
         space_between_options = optionfont.get_height()
 
-        self.enemies = []
         spawntimer = pygame.time.Clock()
         spawntime = 0
         screen_dimmer = Dimmer()
