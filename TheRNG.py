@@ -350,6 +350,25 @@ def draw_text(text, font, surface, x, y, color=WHITE, background=None,
     return textrect.inflate(2, 2)  # for knowing where to redraw the background
 
 
+class TextSprite(pygame.sprite.Sprite):
+    """For use in menus"""
+    def __init__(self, text, font, x, y, color=WHITE):
+        self.text = text
+        self.font = font
+        self.color = color
+        self.image = font.render(text, 1, color)
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+
+    def draw(self, screen):
+        return screen.blit(self.image, self.rect)
+
+    def change_color(self, color):
+        self.image = self.font.render(self.text, 1, color)
+        self.color = color
+
+
+
 class Game(object):
     base_enemy_spawn_delay = 500  # divided by current level
     base_level_length = 6000  # in milliseconds
@@ -393,19 +412,35 @@ class Game(object):
         A basic menu.
         Arrow keys are used to navigate.
         """
-        titlecolor = RED
+        x = WINDOW_WIDTH / 2
+
+        titlefont = pygame.font.Font(MENU_FONT, title_size)
+        title_y = title_size / 2 + 30
+        title = TextSprite(title, titlefont, x, title_y, RED)
+
         optioncolor = WHITE
         selectedoptioncolor = RED
-        titlefont = pygame.font.Font(MENU_FONT, title_size)
         optionfont = pygame.font.Font(MENU_FONT, option_size)
         space_below_title = title_size
-        space_between_options = option_size
-
-        title_y = title_size / 2 + 30
+        space_between_options = optionfont.get_height()
+        option_sprites = []
+        for i in range(len(options)):
+            y = space_below_title + title_y \
+                + (i + 1) * space_between_options
+            if option_selected == i:
+                color = selectedoptioncolor
+            else:
+                color = optioncolor
+            option_sprites.append(
+                TextSprite(options[i], optionfont, x, y, color))
 
         spawntimer = pygame.time.Clock()
         spawntime = 0
         screen_dimmer = Dimmer()
+
+        def update_option_sprites(option_sprites, old_option, new_option):
+            option_sprites[old_option].change_color(optioncolor)
+            option_sprites[new_option].change_color(selectedoptioncolor)
 
         while 1:
             time_since_last_frame = self.clock.tick(MAX_FPS)
@@ -430,19 +465,9 @@ class Game(object):
                     self.screen.blit(object.image, object.rect)
             # then, darken the screen without the title/options
             screen_dimmer.dim(darken_factor=200)
-            # draw title and options
-            draw_text(title, titlefont, self.screen, (WINDOW_WIDTH / 2),
-                      title_y, color=titlecolor, position='center')
-            for i in range(len(options)):
-                x = WINDOW_WIDTH / 2
-                y = space_below_title + title_y \
-                    + (i + 1) * space_between_options
-                if option_selected == i:
-                    color = selectedoptioncolor
-                else:
-                    color = optioncolor
-                draw_text(options[i], optionfont, self.screen, x, y,
-                          color=color, position='center')
+            title.draw(self.screen)
+            for option in option_sprites:
+                option.draw(self.screen)
             # update display
             pygame.display.update()
             # handle keys for menu
@@ -452,18 +477,35 @@ class Game(object):
 
                 if event.type == KEYDOWN:
                     if event.key == K_UP or event.key == ord('w'):
+                        old_option = option_selected
                         option_selected -= 1
                         if option_selected < 0:
                             option_selected = len(options) - 1
+                        update_option_sprites(
+                                option_sprites, old_option, option_selected)
                     elif event.key == K_DOWN or event.key == ord('s'):
+                        old_option = option_selected
                         option_selected += 1
                         if option_selected > len(options) - 1:
                             option_selected = 0
+                        update_option_sprites(
+                                option_sprites, old_option, option_selected)
                     elif event.key == K_ESCAPE:  # pressing escape quits
 
                         return "exit"
                     elif event.key == K_RETURN:
                         return option_selected
+
+                elif event.type == MOUSEMOTION:
+                    for option in option_sprites:
+                        if option.rect.collidepoint(event.pos):
+                            old_option = option_selected
+                            option_selected = option_sprites.index(option)
+                            update_option_sprites(
+                                    option_sprites, old_option, option_selected)
+                            break
+                elif event.type == MOUSEBUTTONDOWN:
+                    return option_selected
 
     def main_menu(self):
         while 1:
