@@ -387,7 +387,8 @@ class Game(object):
         # old textrects: used for filling background color
         self.old_textrects = []
 
-    def menu(self, title, options, main_menu=False, option_selected=0):
+    def menu(self, title, options, title_size=50, option_size=25,
+            enemies_background=True, option_selected=0):
         """
         A basic menu.
         Arrow keys are used to navigate.
@@ -395,16 +396,12 @@ class Game(object):
         titlecolor = RED
         optioncolor = WHITE
         selectedoptioncolor = RED
-        space_below_title = 50
-        if main_menu:
-            titlefont = pygame.font.Font(MENU_FONT, 100)
-            optionfont = pygame.font.Font(MENU_FONT, 50)
-            enemies_background = True
-        else:
-            titlefont = pygame.font.Font(MENU_FONT, 50)
-            optionfont = pygame.font.Font(MENU_FONT, 25)
-            enemies_background = False
-        space_between_options = optionfont.get_height()
+        titlefont = pygame.font.Font(MENU_FONT, title_size)
+        optionfont = pygame.font.Font(MENU_FONT, option_size)
+        space_below_title = title_size
+        space_between_options = option_size
+
+        title_y = title_size / 2 + 30
 
         spawntimer = pygame.time.Clock()
         spawntime = 0
@@ -435,10 +432,10 @@ class Game(object):
             screen_dimmer.dim(darken_factor=200)
             # draw title and options
             draw_text(title, titlefont, self.screen, (WINDOW_WIDTH / 2),
-                      50, color=titlecolor, position='center')
+                      title_y, color=titlecolor, position='center')
             for i in range(len(options)):
                 x = WINDOW_WIDTH / 2
-                y = space_below_title + 30 + (i + 1) * space_between_options
+                y = space_below_title + title_y + (i + 1) * space_between_options
                 if option_selected == i:
                     color = selectedoptioncolor
                 else:
@@ -470,7 +467,7 @@ class Game(object):
     def main_menu(self):
         while 1:
             choice = self.menu("THE RNG", ["Play", "Options", "Exit"],
-                               main_menu=True)
+                               title_size=100, option_size=50)
 
             if choice == 0:
                 while 1:
