@@ -248,7 +248,7 @@ def render_number(text_number):
         image.set_colorkey(BLACK)
     scale = random.randint(3, 4)
     return pygame.transform.scale(
-            image, (image.get_width() * scale, image.get_height() * scale))
+        image, (image.get_width() * scale, image.get_height() * scale))
 
 
 def load_image(name, colorkey=None):
@@ -388,7 +388,7 @@ class Game(object):
         self.old_textrects = []
 
     def menu(self, title, options, title_size=50, option_size=25,
-            enemies_background=True, option_selected=0):
+             enemies_background=True, option_selected=0):
         """
         A basic menu.
         Arrow keys are used to navigate.
@@ -435,7 +435,8 @@ class Game(object):
                       title_y, color=titlecolor, position='center')
             for i in range(len(options)):
                 x = WINDOW_WIDTH / 2
-                y = space_below_title + title_y + (i + 1) * space_between_options
+                y = space_below_title + title_y \
+                    + (i + 1) * space_between_options
                 if option_selected == i:
                     color = selectedoptioncolor
                 else:
