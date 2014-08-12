@@ -589,7 +589,7 @@ class Game(object):
         x = WINDOW_WIDTH - 10
         y = random.randint(0, WINDOW_HEIGHT)
         speed = random.uniform(ENEMY_MIN_SPEED, ENEMY_MAX_SPEED)
-        text = random.choice([str(random.randint(1, 1024))])
+        text = str(self.score)
         if self.level >= 4:
             # 1/10 chance of erratic movement from level 4 onward
             erratic_movement = (1 == random.randint(1, 10))
