@@ -778,7 +778,7 @@ class Game(object):
                 color=WHITE, position='center')
             if self.highscores[i] == self.score:
                 draw_text("YOU ->" + " " * len(str(self.highscores[i])),
-                          font, screen, x - 20, y + 10,
+                          font, self.screen, x - 20, y + 10,
                           color=WHITE, position='bottomright')
 
         pygame.display.update()
