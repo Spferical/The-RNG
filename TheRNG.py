@@ -57,9 +57,7 @@ for i in range(10):
 
 class Player():
 
-    """The player, can move left/right and up/down
-    Functions: reinit, update
-    Attributes: which, speed"""
+    """The player. Can move left/right and up/down."""
 
     def __init__(self, controls='all'):
         self.image, self.rect = load_image('player.png')
@@ -122,10 +120,13 @@ class Player():
 
 class Enemy(pygame.sprite.Sprite):
 
-    """an enemy: comes from the right
-    heads to the left
-    appearance as text or sprite if text is not specified
-    functions: reinit, update"""
+    """An enemy: comes from the right,
+    heads to the left.
+
+    erratic: if True, the enemy's up/down velocity randomly changes.
+    aimed: if True, the enemy starts out with a velocity towards the player.
+    rotated: if True, the image is rotated 90, 180, or 270 degrees.
+    """
 
     def __init__(self, x, y, speed, game, image, erratic=False, aimed=False,
                  rotated=False):
@@ -192,8 +193,7 @@ class TextEnemy(Enemy):
 
 class Dimmer:
 
-    """class for dimming the screen
-    functions: dim, undim"""
+    """Class for dimming the screen."""
 
     def __init__(self, keepalive=0):
         self.keepalive = keepalive
@@ -352,7 +352,7 @@ def draw_text(text, font, surface, x, y, color=WHITE, background=None,
 
 class TextSprite(pygame.sprite.Sprite):
 
-    """For use in menus"""
+    """For use in menus."""
 
     def __init__(self, text, font, x, y, color=WHITE):
         self.text = text
@@ -411,7 +411,7 @@ class Game(object):
              enemies_background=True, option_selected=0):
         """
         A basic menu.
-        Arrow keys are used to navigate.
+        Arrow keys or the mouse are used to navigate.
         """
         x = WINDOW_WIDTH / 2
 
