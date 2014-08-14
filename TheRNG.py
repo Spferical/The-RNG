@@ -351,7 +351,9 @@ def draw_text(text, font, surface, x, y, color=WHITE, background=None,
 
 
 class TextSprite(pygame.sprite.Sprite):
+
     """For use in menus"""
+
     def __init__(self, text, font, x, y, color=WHITE):
         self.text = text
         self.font = font
@@ -366,7 +368,6 @@ class TextSprite(pygame.sprite.Sprite):
     def change_color(self, color):
         self.image = self.font.render(self.text, 1, color)
         self.color = color
-
 
 
 class Game(object):
@@ -482,14 +483,14 @@ class Game(object):
                         if option_selected < 0:
                             option_selected = len(options) - 1
                         update_option_sprites(
-                                option_sprites, old_option, option_selected)
+                            option_sprites, old_option, option_selected)
                     elif event.key == K_DOWN or event.key == ord('s'):
                         old_option = option_selected
                         option_selected += 1
                         if option_selected > len(options) - 1:
                             option_selected = 0
                         update_option_sprites(
-                                option_sprites, old_option, option_selected)
+                            option_sprites, old_option, option_selected)
                     elif event.key == K_ESCAPE:  # pressing escape quits
 
                         return "exit"
@@ -502,7 +503,7 @@ class Game(object):
                             old_option = option_selected
                             option_selected = option_sprites.index(option)
                             update_option_sprites(
-                                    option_sprites, old_option, option_selected)
+                                option_sprites, old_option, option_selected)
                             break
                 elif event.type == MOUSEBUTTONDOWN:
                     return option_selected
