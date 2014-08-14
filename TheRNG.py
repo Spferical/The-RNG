@@ -618,9 +618,6 @@ class Game(object):
         y = random.randint(0, WINDOW_HEIGHT)
         # fast as the average speed of an enemy
         speed = (ENEMY_MAX_SPEED + ENEMY_MIN_SPEED) / 2
-        # 1/2 chance of number, 1/2 chance of sprite
-        # , None])
-        textsprite = random.choice([str(random.randint(1, 99999999))])
         if self.level >= 3:
             # after level 3, half of the left enemies move erratically
             # this makes them look cooler and more terrifying
